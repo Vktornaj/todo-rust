@@ -17,13 +17,13 @@ diesel::table! {
 diesel::table! {
     _todo (id) {
         id -> Uuid,
-        user_id -> Nullable<Uuid>,
+        user_id -> Uuid,
         title -> Varchar,
         description -> Nullable<Varchar>,
-        status -> Nullable<Int4>,
-        create_date -> Date,
-        done_date -> Nullable<Date>,
-        deadline -> Nullable<Date>,
+        status -> Int4,
+        create_date -> Timestamp,
+        done_date -> Nullable<Timestamp>,
+        deadline -> Nullable<Timestamp>,
     }
 }
 

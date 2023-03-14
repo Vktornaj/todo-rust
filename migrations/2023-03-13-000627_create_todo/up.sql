@@ -16,13 +16,13 @@ CREATE TABLE _tag (
 );
 CREATE TABLE _todo (
     id uuid PRIMARY KEY,
-    user_id uuid,
+    user_id uuid NOT NULL,
     title VARCHAR NOT NULL,
     description VARCHAR,
-    status INT,
-    create_date DATE NOT NULL,
-    done_date DATE,
-    deadline DATE,
+    status INT NOT NULL,
+    create_date TIMESTAMP NOT NULL,
+    done_date TIMESTAMP,
+    deadline TIMESTAMP,
     CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES _user(id)
 );
 CREATE TABLE _todo_tag (

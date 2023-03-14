@@ -8,7 +8,10 @@ pub mod schema;
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .mount("/", routes![services::create_user])
-        .mount("/", routes![services::list_users])
-        // .attach(Template::fairing())
+        .mount("/", routes![
+            services::create_user,
+            services::list_users,
+            services::create_todo,
+            services::list_todos,
+        ])
 }

@@ -1,7 +1,7 @@
-use std::time::SystemTime;
 use diesel::{prelude::*};
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
+use std::time::SystemTime;
 
 use super::user::User;
 use super::super::schema::_todo;
@@ -26,7 +26,7 @@ pub struct Todo {
     pub id: Uuid,
     pub user_id: Uuid,
     pub title: String,
-    pub description: String,
+    pub description: Option<String>,
     pub status: i32,
     pub create_date: SystemTime,
     pub done_date: Option<SystemTime>,
