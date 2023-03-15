@@ -1,17 +1,19 @@
 extern crate rocket;
 use rocket::{launch, routes};
-// use rocket_dyn_templates::{Template};
-mod services;
+
+mod routes;
+
 pub mod models;
 pub mod schema;
+pub mod db;
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![
-            services::create_user,
-            services::list_users,
-            services::create_todo,
-            services::list_todos,
+            routes::user::create_user,
+            routes::user::list_users,
+            routes::todo::create_todo,
+            routes::todo::list_todos,
         ])
 }

@@ -2,41 +2,41 @@
 
 diesel::table! {
     _status (id) {
-        id -> Uuid,
+        id -> Int4,
         status_value -> Varchar,
     }
 }
 
 diesel::table! {
     _tag (id) {
-        id -> Uuid,
+        id -> Int4,
         tag_value -> Varchar,
     }
 }
 
 diesel::table! {
     _todo (id) {
-        id -> Uuid,
-        user_id -> Uuid,
+        id -> Int4,
+        user_id -> Int4,
         title -> Varchar,
         description -> Nullable<Varchar>,
         status -> Int4,
-        create_date -> Timestamp,
-        done_date -> Nullable<Timestamp>,
-        deadline -> Nullable<Timestamp>,
+        create_date -> Timestamptz,
+        done_date -> Nullable<Timestamptz>,
+        deadline -> Nullable<Timestamptz>,
     }
 }
 
 diesel::table! {
     _todo_tag (todo_id, tag_id) {
-        todo_id -> Uuid,
-        tag_id -> Uuid,
+        todo_id -> Int4,
+        tag_id -> Int4,
     }
 }
 
 diesel::table! {
     _user (id) {
-        id -> Uuid,
+        id -> Int4,
         username -> Varchar,
         first_name -> Nullable<Varchar>,
         last_name -> Nullable<Varchar>,
