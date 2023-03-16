@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use super::super::schema::_user;
 
 
-#[derive(Queryable, Insertable, Serialize, Deserialize)]
+#[derive(Queryable, Insertable, Serialize, Deserialize, Identifiable)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = _user)]
 pub struct User {

@@ -7,7 +7,7 @@ use rocket::serde::{json::Json};
 use dotenvy::dotenv;
 use std::env;
 
-use crate::models::todo::{Todo, NewTodoJson};
+use crate::models::todo::{NewTodoJson, TodoJson};
 use crate::db;
 
 
@@ -23,17 +23,36 @@ pub fn create_todo(
     todo: Json<NewTodoJson>
 ) -> Json<&'static str> {
     let connection = &mut establish_connection_pg();
-    if db::todo::is_available_title(connection, &todo.title) {
+    if !db::todo::is_available_title(connection, &todo.title) {
         return Json("{ 'msg': 'fail' }");
     }
-    let new_todo = todo.attach();
+    // TODO: extract username from jwt
+    let id = 1;
+
+    let new_todo = todo.attach(id);
     db::todo::write_todo(connection, new_todo);
     Json("{ 'msg': 'done' }")
 }
 
-#[get("/todos")]
-pub fn list_todos() -> Result<Json<Vec<Todo>>, Status> {
+#[get("/todos/<from>/<to>")]
+pub fn list_todos(from: i64, to: i64) -> Result<Json<Vec<TodoJson>>, Status> {
+
+    if to - from > 10 {
+        return Err(Status::BadRequest);
+    }
+
     let connection = &mut establish_connection_pg();
-    let results = db::todo::read_todos(connection);
+
+    // TODO: extract username from jwt
+    let username = "vktornaj".to_string();
+
+    let results: Vec<TodoJson> = match db::user::read_user(connection, &username) {
+        Some(user) => {
+            let results = db::todo::read_todos(connection, &user, from, to);
+            results.into_iter().map(|x| x.attach()).collect()
+        },
+        None => Vec::<TodoJson>::new()
+    };
+
     Ok(Json(results))
 }

@@ -1,4 +1,4 @@
-use diesel::{prelude::*};
+use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
 use std::convert::TryFrom;
@@ -33,7 +33,7 @@ impl TryFrom<i32> for Status {
     }
 }
 
-#[derive(Queryable, Insertable, Serialize, Deserialize, Associations)]
+#[derive(Identifiable, Associations, Queryable, PartialEq, Debug)]
 #[diesel(primary_key(id))]
 #[diesel(belongs_to(User))]
 #[diesel(table_name = _todo)]
@@ -49,17 +49,21 @@ pub struct Todo {
 }
 
 impl Todo {
-    pub fn attach(self, tags: Vec<String>) -> TodoJson {
+    pub fn attach(self) -> TodoJson {
         TodoJson {
             id: self.id,
-            user_id: self.user_id,
             title: self.title,
             description: self.description.unwrap_or("".to_string()),
             status: self.status.try_into().unwrap_or(Status::ABORTED),
             create_date: self.create_date.format(DATE_FORMAT).to_string(),
-            done_date: self.done_date.unwrap().format(DATE_FORMAT).to_string(),
-            deadline: self.deadline.unwrap().format(DATE_FORMAT).to_string(),
-            tags: tags,
+            done_date: match self.done_date {
+                Some(date) => date.format(DATE_FORMAT).to_string(),
+                None => "".to_string(),
+            },
+            deadline: match self.deadline {
+                Some(date) => date.format(DATE_FORMAT).to_string(),
+                None => "".to_string(),
+            }
         }
     }
 }
@@ -68,20 +72,19 @@ impl Todo {
 #[serde(rename_all = "camelCase")]
 pub struct TodoJson {
     pub id: i32,
-    pub user_id: i32,
     pub title: String,
     pub description: String,
     pub status: Status,
     pub create_date: String,
     pub done_date: String,
     pub deadline: String,
-    pub tags: Vec<String>,
+    // pub tags: Vec<String>,
 }
 
 #[derive(Serialize, Insertable)]
 #[diesel(table_name = _todo)]
 pub struct NewTodo<'a> {
-    pub user_id: &'a i32,
+    pub user_id: i32,
     pub title: &'a String,
     pub description: &'a String,
     pub status: &'a i32,
@@ -90,7 +93,6 @@ pub struct NewTodo<'a> {
 impl NewTodo<'_> {
     pub fn attach(self) -> NewTodoJson {
         NewTodoJson {
-            user_id: self.user_id.clone(),
             title: self.title.clone(),
             description: self.description.clone(),
             status: self.status.clone(),
@@ -101,16 +103,15 @@ impl NewTodo<'_> {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewTodoJson {
-    pub user_id: i32,
     pub title: String,
     pub description: String,
     pub status: i32,
 }
 
 impl NewTodoJson {
-    pub fn attach<'a>(&'a self) -> NewTodo<'a> {
+    pub fn attach<'a>(&'a self, user_id: i32) -> NewTodo<'a> {
         NewTodo {
-            user_id: &self.user_id,
+            user_id: user_id,
             title: &self.title,
             description: &self.description,
             status: &self.status,

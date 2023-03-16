@@ -30,3 +30,17 @@ pub fn read_users(connection: &mut PgConnection) -> Vec<User> {
         .load::<User>(connection)
         .expect("Error loading users")
 }
+
+pub fn read_user(connection: &mut PgConnection, username_: &String) -> Option<User> {
+    use self::schema::_user::dsl::*;
+    let mut users = _user
+        .filter(username.eq(username_))
+        .limit(1)
+        .load::<User>(connection)
+        .expect("Error reading user");
+    if users.len() > 0 {
+        Some(users.remove(0))
+    } else {
+        None
+    }
+}

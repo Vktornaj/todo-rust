@@ -1,8 +1,10 @@
 extern crate diesel;
+
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 use crate::models::todo::{Todo, NewTodo};
+use crate::models::user::User;
 use crate::schema;
 
 
@@ -24,9 +26,17 @@ pub fn write_todo(connection: &mut PgConnection, new_todo: NewTodo<'_>) {
         .expect("Error saving new user");
 }
 
-pub fn read_todos(connection: &mut PgConnection) -> Vec<Todo> {
+pub fn read_todos(
+    connection: &mut PgConnection, 
+    user: &User,
+    from: i64,
+    to: i64,
+) -> Vec<Todo> {
     use self::schema::_todo::dsl::*;
-    _todo
+    Todo::belonging_to(user)
+        .order(id)
+        .limit(to)
+        .offset(from)
         .load::<Todo>(connection)
-        .expect("Error loading users")
+        .expect("Error loading todos")
 }

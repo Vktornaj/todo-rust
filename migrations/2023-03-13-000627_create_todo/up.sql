@@ -24,8 +24,8 @@ CREATE TABLE _todo (
     description VARCHAR,
     status INT NOT NULL,
     create_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    done_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    deadline TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    done_date TIMESTAMP WITH TIME ZONE,
+    deadline TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES _user(id)
 );
 

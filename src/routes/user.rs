@@ -8,7 +8,7 @@ use rocket::http::Status;
 use rocket::{get, post};
 use rocket::serde::{json::Json, Deserialize, Serialize};
 
-use crate::models::user::{User, NewUserJson};
+use crate::models::user::{NewUserJson, UserJson};
 use crate::db::user as db_user;
 
 
@@ -45,8 +45,10 @@ pub fn create_user(
 }
 
 #[get("/users")]
-pub fn list_users() -> Result<Json<Vec<User>>, Status> {
+pub fn list_users() -> Result<Json<Vec<UserJson>>, Status> {
     let connection = &mut establish_connection_pg();
     let results = db_user::read_users(connection);
+    let results = results.into_iter()
+        .map(|x| x.attach()).collect();
     Ok(Json(results))
 }
