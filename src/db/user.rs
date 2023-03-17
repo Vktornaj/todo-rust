@@ -16,10 +16,10 @@ pub fn is_available_username(connection: &mut PgConnection, username_: &String) 
     result.len() == 0
 }
 
-pub fn write_user(connection: &mut PgConnection, new_user: NewUser) {
+pub fn write_user(connection: &mut PgConnection, new_user: &NewUser) {
     use self::schema::_user::dsl::*;
     diesel::insert_into(_user)
-        .values(&new_user)
+        .values(new_user)
         .execute(connection)
         .expect("Error saving new user");
 }

@@ -13,6 +13,7 @@ fn rocket() -> _ {
         .mount("/", routes![
             routes::user::create_user,
             routes::user::list_users,
+            routes::user::login,
             routes::todo::create_todo,
             routes::todo::list_todos,
         ])

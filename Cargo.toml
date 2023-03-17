@@ -12,7 +12,7 @@ dotenvy = "0.15"
 serde = "1.0.152"
 diesel_derives = "2.0.1"
 chrono = { version = "0.4.24", features = ["serde"] }
-
+argon2 = "0.5.0"
 
 [dependencies.rocket_contrib]
 version = "0.4.4"

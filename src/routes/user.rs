@@ -28,19 +28,21 @@ pub fn establish_connection_pg() -> PgConnection {
 }
 
 #[post("/user", format = "json", data = "<user>")]
-pub fn create_user(
-    user: Json<NewUserJson>
-) -> Json<&'static str>  {
+pub fn create_user(user: Json<NewUserJson>) -> Json<&'static str>  {
     let connection = &mut establish_connection_pg();
 
-    let new_user = user.attach();
+    let err_value = Json("{ 'msg': 'fail' }");
 
-    if !db_user::is_available_username(connection, &new_user.username) {
-        return Json("{ 'msg': 'fail' }");
+    if !db_user::is_available_username(connection, &user.0.username) {
+        return err_value;
     }
-
-    db_user::write_user(connection, new_user);
-
+    let mut new_user = user.0.attach();
+    
+    if new_user.hash_password().is_err() {
+        return err_value;
+    }
+    
+    db_user::write_user(connection, &new_user);
     Json("{ 'msg': 'done' }")
 }
 
@@ -51,4 +53,21 @@ pub fn list_users() -> Result<Json<Vec<UserJson>>, Status> {
     let results = results.into_iter()
         .map(|x| x.attach()).collect();
     Ok(Json(results))
+}
+
+#[derive(Deserialize)]
+pub struct Credentials {
+    username: String,
+    password: String,
+}
+
+#[post("/login", format = "json", data = "<credentials>")]
+pub fn login(credentials: Json<Credentials>) -> Option<Json<&'static str>>  {
+    let connection = &mut establish_connection_pg();
+
+    let user = db_user::read_user(connection, &credentials.username)?;
+
+    user.verify_password(&credentials.password).ok()?;
+
+    Some(Json("{ 'msg': 'done' }"))
 }
