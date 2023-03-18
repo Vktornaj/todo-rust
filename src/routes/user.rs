@@ -46,6 +46,20 @@ pub fn create_user(user: Json<NewUserJson>) -> Json<&'static str>  {
     Json("{ 'msg': 'done' }")
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Available {
+    is_available: bool
+}
+
+#[get("/get-username-availability/<username>")]
+pub fn username_available(username: String) -> Json<Available> {
+    let connection = &mut establish_connection_pg();
+
+    let is_available = db_user::is_available_username(connection, &username);
+    Json(Available{ is_available })
+}
+
 #[get("/users")]
 pub fn list_users() -> Result<Json<Vec<UserJson>>, Status> {
     let connection = &mut establish_connection_pg();

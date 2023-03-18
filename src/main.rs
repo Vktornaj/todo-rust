@@ -11,6 +11,7 @@ pub mod db;
 fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![
+            routes::user::username_available,
             routes::user::create_user,
             routes::user::list_users,
             routes::user::login,
