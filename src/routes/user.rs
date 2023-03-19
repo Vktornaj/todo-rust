@@ -82,19 +82,31 @@ pub struct AuthToken {
 pub fn login(
     credentials: Json<Credentials>,
     state: &State<AppState>,
-) -> Option<Json<AuthToken>>  {
+) -> (Status, Option<Json<AuthToken>>)  {
     let connection = &mut establish_connection_pg();
-    let user = db_user::read_user(connection, &credentials.username)?;
 
-    user.verify_password(&credentials.password).ok()?;
+    let user = db_user::read_user_username(connection, &credentials.username);
+
+    if user.is_none() {
+        return (Status::Unauthorized, None);
+    }
+
+    if user.as_ref().unwrap().verify_password(&credentials.password).is_err() {
+        return (Status::Unauthorized, None);
+    }
 
     let token = Auth { 
         exp: (Utc::now() + Duration::days(60)).timestamp(), 
-        id: user.id
+        id: user.unwrap().id
     }.token(&state.secret);
 
-    Some(Json(AuthToken { 
-            authorization_token: "barer ".to_string() + &token, 
-            token_type: "barer".to_string()
-    }))
+    (
+        Status::Accepted,
+        Some(Json(
+            AuthToken { 
+                authorization_token: token, 
+                token_type: "barer".to_string()
+            }
+        ))
+    )
 }

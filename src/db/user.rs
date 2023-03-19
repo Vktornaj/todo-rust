@@ -10,10 +10,8 @@ pub fn is_available_username(connection: &mut PgConnection, username_: &String) 
     use self::schema::_user::dsl::*;
     let result = _user
         .filter(username.like(username_))
-        .limit(1)
-        .load::<User>(connection)
-        .expect("Error loading user");
-    result.len() == 0
+        .first::<User>(connection);
+    result.is_err()
 }
 
 pub fn write_user(connection: &mut PgConnection, new_user: &NewUser) {
@@ -31,16 +29,12 @@ pub fn read_users(connection: &mut PgConnection) -> Vec<User> {
         .expect("Error loading users")
 }
 
-pub fn read_user(connection: &mut PgConnection, username_: &String) -> Option<User> {
+pub fn read_user(connection: &mut PgConnection, id_: &i32) -> Option<User> {
     use self::schema::_user::dsl::*;
-    let mut users = _user
-        .filter(username.eq(username_))
-        .limit(1)
-        .load::<User>(connection)
-        .expect("Error reading user");
-    if users.len() > 0 {
-        Some(users.remove(0))
-    } else {
-        None
-    }
+    _user.find(id_).first::<User>(connection).ok()
+}
+
+pub fn read_user_username(connection: &mut PgConnection, username_: &String) -> Option<User> {
+    use self::schema::_user::dsl::*;
+    _user.filter(username.eq(username_)).first::<User>(connection).ok()
 }

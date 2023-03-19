@@ -9,6 +9,7 @@ use std::env;
 
 use crate::models::todo::{NewTodoJson, TodoJson};
 use crate::db;
+use crate::auth::Auth;
 
 
 pub fn establish_connection_pg() -> PgConnection {
@@ -20,14 +21,14 @@ pub fn establish_connection_pg() -> PgConnection {
 
 #[post("/todo", format = "json", data = "<todo>")]
 pub fn create_todo(
-    todo: Json<NewTodoJson>
+    todo: Json<NewTodoJson>,
+    auth: Auth,
 ) -> Json<&'static str> {
     let connection = &mut establish_connection_pg();
     if !db::todo::is_available_title(connection, &todo.title) {
         return Json("{ 'msg': 'fail' }");
     }
-    // TODO: extract username from jwt
-    let id = 1;
+    let id = auth.id;
 
     let new_todo = todo.attach(id);
     db::todo::write_todo(connection, new_todo);
@@ -35,7 +36,7 @@ pub fn create_todo(
 }
 
 #[get("/todos/<from>/<to>")]
-pub fn list_todos(from: i64, to: i64) -> Result<Json<Vec<TodoJson>>, Status> {
+    pub fn list_todos(from: i64, to: i64, auth: Auth) -> Result<Json<Vec<TodoJson>>, Status> {
 
     if to - from > 10 {
         return Err(Status::BadRequest);
@@ -43,10 +44,9 @@ pub fn list_todos(from: i64, to: i64) -> Result<Json<Vec<TodoJson>>, Status> {
 
     let connection = &mut establish_connection_pg();
 
-    // TODO: extract username from jwt
-    let username = "vktornaj".to_string();
+    println!("{}", &auth.id);
 
-    let results: Vec<TodoJson> = match db::user::read_user(connection, &username) {
+    let results: Vec<TodoJson> = match db::user::read_user(connection, &auth.id) {
         Some(user) => {
             let results = db::todo::read_todos(connection, &user, from, to);
             results.into_iter().map(|x| x.attach()).collect()
