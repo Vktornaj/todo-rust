@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, TimeZone};
 use std::convert::TryFrom;
 
 use super::user::User;
@@ -77,7 +77,6 @@ pub struct TodoJson {
     pub create_date: String,
     pub done_date: String,
     pub deadline: String,
-    // pub tags: Vec<String>,
 }
 
 #[derive(Serialize, Insertable)]
@@ -116,4 +115,38 @@ impl NewTodoJson {
             status: &self.status,
         }
     }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TodoUpdateJson {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<Status>,
+    pub done_date: Option<String>,
+    pub deadline: Option<String>,
+}
+
+impl TodoUpdateJson {
+    pub fn attach(self, user_id: i32, todo_id: i32) -> TodoUpdate {
+        TodoUpdate {
+            id: todo_id,
+            user_id,
+            title: self.title,
+            description: self.description,
+            status: self.status.and_then(|x| Some(x as i32)),
+            done_date: self.done_date.and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok()),
+            deadline: self.deadline.and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok()),
+        }
+    }
+}
+
+pub struct TodoUpdate {
+    pub id: i32,
+    pub user_id: i32,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<i32>,
+    pub done_date: Option<DateTime<Utc>>,
+    pub deadline: Option<DateTime<Utc>>,
 }

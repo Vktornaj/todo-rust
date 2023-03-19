@@ -16,6 +16,25 @@ use crate::db::user as db_user;
 use crate::auth::Auth;
 
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Available {
+    is_available: bool
+}
+
+#[derive(Deserialize)]
+pub struct Credentials {
+    username: String,
+    password: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthToken {
+    authorization_token: String,
+    token_type: String,
+}
+
 pub fn establish_connection_pg() -> PgConnection {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -23,7 +42,7 @@ pub fn establish_connection_pg() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-#[post("/user", format = "json", data = "<user>")]
+#[post("/register", format = "json", data = "<user>")]
 pub fn create_user(user: Json<NewUserJson>) -> Json<&'static str>  {
     let connection = &mut establish_connection_pg();
 
@@ -40,12 +59,6 @@ pub fn create_user(user: Json<NewUserJson>) -> Json<&'static str>  {
     
     db_user::write_user(connection, &new_user);
     Json("{ 'msg': 'done' }")
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Available {
-    is_available: bool
 }
 
 #[get("/get-username-availability/<username>")]
@@ -65,17 +78,14 @@ pub fn list_users() -> Result<Json<Vec<UserJson>>, Status> {
     Ok(Json(results))
 }
 
-#[derive(Deserialize)]
-pub struct Credentials {
-    username: String,
-    password: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AuthToken {
-    authorization_token: String,
-    token_type: String,
+#[get("/user/info")]
+pub fn get_user_info(auth: Auth) -> (Status, Option<Json<UserJson>>) {
+    let connection = &mut establish_connection_pg();
+    let user = db_user::read_user(connection, &auth.id);
+    if user.is_none() {
+        return (Status::Gone, None)
+    }
+    (Status::Accepted, Some(Json(user.unwrap().attach())))
 }
 
 #[post("/login", format = "json", data = "<credentials>")]

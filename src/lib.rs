@@ -1,4 +1,4 @@
-use rocket::{Request, catch, catchers};
+use rocket::{Request, catch, catchers, options};
 use cors::CORS;
 use rocket::{launch, routes};
 use dotenv::dotenv;
@@ -17,10 +17,17 @@ fn not_found(req: &Request) -> String {
     format!("Sorry, '{}' is not a valid path.", req.uri())
 }
 
+/// Catches all OPTION requests in order to get the CORS related Fairing triggered.
+#[options("/<_..>")]
+fn all_options() {
+    /* Intentionally left empty */
+}
+
 #[launch]
 pub fn rocket() -> _ {
     dotenv().ok();
     rocket::custom(config::from_env())
+        .attach(CORS)
         .mount(
             "/api", 
             routes![
@@ -28,11 +35,14 @@ pub fn rocket() -> _ {
                 routes::user::create_user,
                 routes::user::list_users,
                 routes::user::login,
-                routes::todo::create_todo,
-                routes::todo::list_todos,
+                routes::user::get_user_info,
+                routes::todo::post_todo,
+                routes::todo::update_todo,
+                routes::todo::delete_todo,
+                routes::todo::get_todos,
+                all_options,
             ],
-        )    
-        .attach(CORS)
+        )
         .attach(config::AppState::manage())
         .register("/", catchers![not_found])
 }
