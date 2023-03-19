@@ -5,9 +5,8 @@ use std::convert::TryFrom;
 
 use super::user::User;
 use super::super::schema::_todo;
+use super::super::config::DATE_FORMAT;
 
-
-pub const DATE_FORMAT: &'static str = "%Y-%m-%dT%H:%M:%S%.3fZ";
 
 #[derive(Deserialize, Serialize)]
 pub enum Status {

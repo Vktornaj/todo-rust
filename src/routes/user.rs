@@ -5,20 +5,16 @@ use diesel::pg::{PgConnection};
 use diesel::prelude::*;
 use dotenvy::dotenv;
 use rocket::http::Status;
+use rocket::State;
 use rocket::{get, post};
 use rocket::serde::{json::Json, Deserialize, Serialize};
+use chrono::{Duration, Utc};
 
+use crate::config::AppState;
 use crate::models::user::{NewUserJson, UserJson};
 use crate::db::user as db_user;
+use crate::auth::Auth;
 
-
-#[derive(Serialize, Deserialize)]
-pub struct NewUser {
-    username: String,
-    first_name: String,
-    last_name: String,
-    password: String,
-}
 
 pub fn establish_connection_pg() -> PgConnection {
     dotenv().ok();
@@ -75,13 +71,30 @@ pub struct Credentials {
     password: String,
 }
 
-#[post("/login", format = "json", data = "<credentials>")]
-pub fn login(credentials: Json<Credentials>) -> Option<Json<&'static str>>  {
-    let connection = &mut establish_connection_pg();
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthToken {
+    authorization_token: String,
+    token_type: String,
+}
 
+#[post("/login", format = "json", data = "<credentials>")]
+pub fn login(
+    credentials: Json<Credentials>,
+    state: &State<AppState>,
+) -> Option<Json<AuthToken>>  {
+    let connection = &mut establish_connection_pg();
     let user = db_user::read_user(connection, &credentials.username)?;
 
     user.verify_password(&credentials.password).ok()?;
 
-    Some(Json("{ 'msg': 'done' }"))
+    let token = Auth { 
+        exp: (Utc::now() + Duration::days(60)).timestamp(), 
+        id: user.id
+    }.token(&state.secret);
+
+    Some(Json(AuthToken { 
+            authorization_token: "barer ".to_string() + &token, 
+            token_type: "barer".to_string()
+    }))
 }
