@@ -3,6 +3,9 @@ use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc, TimeZone};
 use std::convert::TryFrom;
 
+use crate::db;
+use crate::routes::todo::establish_connection_pg;
+
 use super::user::User;
 use super::super::schema::_todo;
 use super::super::config::DATE_FORMAT;
@@ -49,6 +52,7 @@ pub struct Todo {
 
 impl Todo {
     pub fn attach(self) -> TodoJson {
+        let connection = &mut establish_connection_pg();
         TodoJson {
             id: self.id,
             title: self.title,
@@ -62,7 +66,9 @@ impl Todo {
             deadline: match self.deadline {
                 Some(date) => date.format(DATE_FORMAT).to_string(),
                 None => "".to_string(),
-            }
+            },
+            tags: db::tag::read_todo_tags(connection, self.id).into_iter()
+                .map(|x| x.tag_value).collect(),
         }
     }
 }
@@ -77,6 +83,7 @@ pub struct TodoJson {
     pub create_date: String,
     pub done_date: String,
     pub deadline: String,
+    pub tags: Vec<String>,
 }
 
 #[derive(Serialize, Insertable)]

@@ -11,7 +11,7 @@ use argon2::{
 use super::super::schema::_user;
 
 
-#[derive(Queryable, Insertable, Serialize, Deserialize, Identifiable)]
+#[derive(Identifiable, Queryable, PartialEq, Debug)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = _user)]
 pub struct User {

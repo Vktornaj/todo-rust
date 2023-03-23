@@ -7,6 +7,7 @@ use rocket::serde::{json::Json};
 use dotenvy::dotenv;
 use std::env;
 
+use crate::models::tag::NewTag;
 use crate::models::todo::{NewTodoJson, TodoJson, TodoUpdateJson};
 use crate::db;
 use crate::auth::Auth;
@@ -34,7 +35,6 @@ pub fn post_todo(
     (Status::Accepted, "done")
 }
 
-// TODO: add update todo endpoint
 #[put("/todo/<id>", format = "json", data = "<todo_update>")]
 pub fn update_todo(
     id: i32,
@@ -61,7 +61,6 @@ pub fn update_todo(
     (Status::Accepted, "done")
 }
 
-// TODO: add delete todo endpoint
 #[delete("/todo/<id>")]
 pub fn delete_todo(
     id: i32,
@@ -69,7 +68,9 @@ pub fn delete_todo(
 ) -> Status {
     let connection = &mut establish_connection_pg();
 
-    db::todo::is_belonging_to(connection, auth.id, id);
+    if !db::todo::is_belonging_to(connection, auth.id, id) {
+        return Status::Gone;
+    }
     if db::todo::delete_todo(connection, id).is_err() {
         return Status::Gone;
     }
@@ -95,4 +96,38 @@ pub fn get_todos(from: i64, to: i64, auth: Auth) -> Result<Json<Vec<TodoJson>>, 
     };
 
     Ok(Json(results))
+}
+
+#[put("/todo/<id>/tag/<tag>")]
+pub fn put_add_tag(id: i32, tag: String, auth: Auth) -> Status {
+    let connection = &mut establish_connection_pg();
+    if !db::todo::is_belonging_to(connection, auth.id, id) {
+        return Status::Gone;
+    }
+    let is_tag_existing = db::tag::is_user_tag_existing(connection, auth.id, &tag);
+    if is_tag_existing.is_err() {
+        return Status::Gone;
+    }
+    let tag_id = if is_tag_existing.unwrap() {
+        db::tag::read_tag(connection, auth.id, &tag)
+    } else {
+        db::tag::write_tag(connection, &NewTag { tag_value: tag })
+    };
+    if tag_id.is_err() 
+        || db::tag::associate_todo_tag(connection, id, tag_id.unwrap()).is_err() {
+        return Status::Gone;
+    }
+    Status::Accepted
+}
+
+#[delete("/todo/<id>/tag/<tag>")]
+pub fn put_remove_tag(id: i32, tag: String, auth: Auth) -> Status {
+    let connection = &mut establish_connection_pg();
+    if !db::todo::is_belonging_to(connection, auth.id, id) {
+        return Status::Gone;
+    }
+    if db::tag::delete_todo_tag(connection, id, &tag).is_err() {
+        return Status::Gone;
+    }
+    Status::Accepted
 }
