@@ -4,10 +4,11 @@ use std::env;
 use diesel::pg::{PgConnection};
 use diesel::prelude::*;
 use dotenvy::dotenv;
-use rocket::http::Status;
+use rocket::http::{Status, ContentType};
 use rocket::State;
+use rocket::response::status;
 use rocket::{get, post};
-use rocket::serde::{json::Json, Deserialize, Serialize};
+use rocket::serde::{json::Json, Serialize, Deserialize};
 use chrono::{Duration, Utc};
 
 use crate::config::AppState;
@@ -15,25 +16,6 @@ use crate::models::user::{NewUserJson, UserJson};
 use crate::db::user as db_user;
 use crate::auth::Auth;
 
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Available {
-    is_available: bool
-}
-
-#[derive(Deserialize)]
-pub struct Credentials {
-    username: String,
-    password: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AuthToken {
-    authorization_token: String,
-    token_type: String,
-}
 
 pub fn establish_connection_pg() -> PgConnection {
     dotenv().ok();
@@ -43,30 +25,31 @@ pub fn establish_connection_pg() -> PgConnection {
 }
 
 #[post("/register", format = "json", data = "<user>")]
-pub fn create_user(user: Json<NewUserJson>) -> Json<&'static str>  {
+pub fn create_user(user: Json<NewUserJson>) -> (Status, String)  {
     let connection = &mut establish_connection_pg();
 
-    let err_value = Json("{ 'msg': 'fail' }");
-
     if !db_user::is_available_username(connection, &user.0.username) {
-        return err_value;
+        return (Status::NotAcceptable, "username already exist".to_string());
     }
     let mut new_user = user.0.attach();
     
     if new_user.hash_password().is_err() {
-        return err_value;
+        return (Status::NotAcceptable, "password error".to_string());
     }
     
     db_user::write_user(connection, &new_user);
-    Json("{ 'msg': 'done' }")
+    (Status::Ok, "".to_string())
 }
 
 #[get("/get-username-availability/<username>")]
-pub fn username_available(username: String) -> Json<Available> {
+pub fn username_available(username: String) -> (Status, (ContentType, String)) {
     let connection = &mut establish_connection_pg();
 
     let is_available = db_user::is_available_username(connection, &username);
-    Json(Available{ is_available })
+    (
+        Status::Ok,
+        (ContentType::JSON, format!("{{ \"isAvailable\": \"{is_available}\" }}"))
+    )
 }
 
 #[get("/users")]
@@ -85,38 +68,40 @@ pub fn get_user_info(auth: Auth) -> (Status, Option<Json<UserJson>>) {
     if user.is_none() {
         return (Status::Gone, None)
     }
-    (Status::Accepted, Some(Json(user.unwrap().attach())))
+    (Status::Ok, Some(Json(user.unwrap().attach())))
 }
 
+#[derive(Deserialize)]
+pub struct Credentials {
+    username: String,
+    password: String,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Token {
+    pub authorization_token: String,
+    pub token_type: String,
+}
 #[post("/login", format = "json", data = "<credentials>")]
 pub fn login(
     credentials: Json<Credentials>,
     state: &State<AppState>,
-) -> (Status, Option<Json<AuthToken>>)  {
+) -> Result<Json<Token>, status::Unauthorized<String>> {
     let connection = &mut establish_connection_pg();
-
     let user = db_user::read_user_username(connection, &credentials.username);
 
+    let invalid_msg = "invalid credentials".to_string();
+
     if user.is_none() {
-        return (Status::Unauthorized, None);
+        return Err(status::Unauthorized(Some(invalid_msg)));
     }
-
     if user.as_ref().unwrap().verify_password(&credentials.password).is_err() {
-        return (Status::Unauthorized, None);
+        return Err(status::Unauthorized(Some(invalid_msg)));
     }
-
     let token = Auth { 
         exp: (Utc::now() + Duration::days(60)).timestamp(), 
         id: user.unwrap().id
     }.token(&state.secret);
 
-    (
-        Status::Accepted,
-        Some(Json(
-            AuthToken { 
-                authorization_token: token, 
-                token_type: "barer".to_string()
-            }
-        ))
-    )
+    Ok(Json(Token { authorization_token: token, token_type: "Bearer".to_string() }))
 }

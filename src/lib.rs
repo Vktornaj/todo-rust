@@ -7,8 +7,8 @@ mod db;
 mod cors;
 mod auth;
 mod config;
-mod routes;
-mod models;
+pub mod routes;
+pub mod models;
 mod schema;
 
 

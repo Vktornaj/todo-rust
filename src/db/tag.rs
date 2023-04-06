@@ -141,3 +141,23 @@ pub fn delete_todo_tag(
         .execute(connection)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use dotenvy::dotenv;
+    use std::env;
+    use super::*;
+
+    fn establish_connection_pg() -> PgConnection {
+        dotenv().ok();
+        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        PgConnection::establish(&database_url)
+            .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+    }
+
+    #[test]
+    fn test_is_user_tag_existing() {
+        let connection = &mut establish_connection_pg();
+        assert_eq!(is_user_tag_existing(connection, user_id_, tag_value_), Ok(true));
+    }
+}

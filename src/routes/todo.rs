@@ -27,12 +27,12 @@ pub fn post_todo(
 ) -> (Status, &'static str) {
     let connection = &mut establish_connection_pg();
     if !db::todo::is_available_title(connection, auth.id, &todo.title) {
-        return (Status::Gone, "the title is in conflict");
+        return (Status::Conflict, "the title is in conflict");
     }
 
     let new_todo = todo.attach(auth.id);
     db::todo::write_todo(connection, new_todo);
-    (Status::Accepted, "done")
+    (Status::Ok, "done")
 }
 
 #[put("/todo/<id>", format = "json", data = "<todo_update>")]
@@ -58,7 +58,7 @@ pub fn update_todo(
         return (Status::Gone, "error updating");
     }
 
-    (Status::Accepted, "done")
+    (Status::Ok, "done")
 }
 
 #[delete("/todo/<id>")]
@@ -75,7 +75,7 @@ pub fn delete_todo(
         return Status::Gone;
     }
 
-    Status::Accepted
+    Status::Ok
 }
 
 #[get("/todos/<from>/<to>")]
@@ -98,26 +98,32 @@ pub fn get_todos(from: i64, to: i64, auth: Auth) -> Result<Json<Vec<TodoJson>>, 
     Ok(Json(results))
 }
 
+// TODO: fix avoid repeated values
 #[put("/todo/<id>/tag/<tag>")]
-pub fn put_add_tag(id: i32, tag: String, auth: Auth) -> Status {
+pub fn put_add_tag(id: i32, tag: String, auth: Auth) -> (Status, String) {
     let connection = &mut establish_connection_pg();
     if !db::todo::is_belonging_to(connection, auth.id, id) {
-        return Status::Gone;
+        return (Status::NoContent, "you don't have a todo with this id".to_owned());
     }
     let is_tag_existing = db::tag::is_user_tag_existing(connection, auth.id, &tag);
     if is_tag_existing.is_err() {
-        return Status::Gone;
+        return (Status::InternalServerError, "error querying the database".to_owned());
     }
     let tag_id = if is_tag_existing.unwrap() {
         db::tag::read_tag(connection, auth.id, &tag)
     } else {
-        db::tag::write_tag(connection, &NewTag { tag_value: tag })
+        db::tag::write_tag(connection, &NewTag { tag_value: tag.clone() })
     };
-    if tag_id.is_err() 
-        || db::tag::associate_todo_tag(connection, id, tag_id.unwrap()).is_err() {
-        return Status::Gone;
+    if tag_id.is_err() {
+        return (Status::NotAcceptable, "database insert failed".to_owned());
     }
-    Status::Accepted
+    if db::tag::associate_todo_tag(connection, id, tag_id.unwrap()).is_err() {
+        return (
+            Status::Conflict, 
+            format!("todo id: {id} already has \"{}\" tag.", &tag)
+        );
+    }
+    (Status::Ok, "".to_owned())
 }
 
 #[delete("/todo/<id>/tag/<tag>")]
@@ -129,5 +135,5 @@ pub fn put_remove_tag(id: i32, tag: String, auth: Auth) -> Status {
     if db::tag::delete_todo_tag(connection, id, &tag).is_err() {
         return Status::Gone;
     }
-    Status::Accepted
+    Status::Ok
 }
