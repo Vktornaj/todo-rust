@@ -89,21 +89,9 @@ fn test_tag() {
     let todos: Vec<todo_rust::models::todo::TodoJson> = response.into_json().unwrap();
 
     assert_eq!(todos[0].tags.len(), 1);
-    
-    // TODO: strengthen this test
-    // Repeated tag
-    response = client
-        .put(format!("/api/todo/{}/tag/{}", 1, "urgent"))
-        .header(Header::new(
-            "Authorization", 
-            format!("{} {}", &token.token_type, &token.authorization_token)
-        ))
-        .dispatch();
 
-    assert_eq!(response.status(), Status::Conflict);
-    
     response = client
-        .get(format!("/api/todos/{}/{}", 0, 1))
+        .put(format!("/api/todo/{}/tag/{}", 1, "urgent2"))
         .header(Header::new(
             "Authorization", 
             format!("{} {}", &token.token_type, &token.authorization_token)
@@ -111,8 +99,42 @@ fn test_tag() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Ok);
-    let todos: Vec<todo_rust::models::todo::TodoJson> = response.into_json().unwrap();
+    
+    // TODO: strengthen this test
+    // Repeated tag
+    for _ in 0..10 {
+        response = client
+            .put(format!("/api/todo/{}/tag/{}", 1, "urgent"))
+            .header(Header::new(
+                "Authorization", 
+                format!("{} {}", &token.token_type, &token.authorization_token)
+            ))
+            .dispatch();
 
-    assert_eq!(todos[0].tags.len(), 1);
+        assert_eq!(response.status(), Status::Conflict);
+        
+        response = client
+            .put(format!("/api/todo/{}/tag/{}", 1, "urgent2"))
+            .header(Header::new(
+                "Authorization", 
+                format!("{} {}", &token.token_type, &token.authorization_token)
+            ))
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Conflict);
+
+        response = client
+            .get(format!("/api/todos/{}/{}", 0, 1))
+            .header(Header::new(
+                "Authorization", 
+                format!("{} {}", &token.token_type, &token.authorization_token)
+            ))
+            .dispatch();
+        
+        assert_eq!(response.status(), Status::Ok);
+        let todos: Vec<todo_rust::models::todo::TodoJson> = response.into_json().unwrap();
+        
+        assert_eq!(todos[0].tags.len(), 2);
+    }
 
 }

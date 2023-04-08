@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc, TimeZone};
 use std::convert::TryFrom;
 
-use crate::db;
+use crate::database;
 use crate::routes::todo::establish_connection_pg;
 
 use super::user::User;
@@ -67,7 +67,7 @@ impl Todo {
                 Some(date) => date.format(DATE_FORMAT).to_string(),
                 None => "".to_string(),
             },
-            tags: db::tag::read_todo_tags(connection, self.id).into_iter()
+            tags: database::tag::read_todo_tags(connection, self.id).into_iter()
                 .map(|x| x.tag_value).collect(),
         }
     }

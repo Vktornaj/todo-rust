@@ -6,12 +6,12 @@ use diesel::{prelude::*};
 use crate::models::todo::{Todo, NewTodo, TodoUpdate};
 use crate::models::user::User;
 use crate::schema;
-use crate::db;
+use crate::database;
 
 
 pub fn is_available_title(connection: &mut PgConnection, user_id_: i32, title_: &String) -> bool {
     use self::schema::_todo::dsl::*;
-    let user = db::user::read_user(connection, &user_id_);
+    let user = database::user::read_user(connection, &user_id_);
     if user.is_none() {
         return false;
     }
@@ -45,7 +45,7 @@ pub fn read_todos(
 }
 
 pub fn is_belonging_to(connection: &mut PgConnection, user_id_: i32, todo_id: i32) -> bool {
-    let user = db::user::read_user(connection, &user_id_);
+    let user = database::user::read_user(connection, &user_id_);
     if user.is_none() {
         return false;
     }

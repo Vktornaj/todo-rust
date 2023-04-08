@@ -9,7 +9,7 @@ use std::env;
 
 use crate::models::tag::NewTag;
 use crate::models::todo::{NewTodoJson, TodoJson, TodoUpdateJson};
-use crate::db;
+use crate::database;
 use crate::auth::Auth;
 
 
@@ -26,12 +26,12 @@ pub fn post_todo(
     auth: Auth,
 ) -> (Status, &'static str) {
     let connection = &mut establish_connection_pg();
-    if !db::todo::is_available_title(connection, auth.id, &todo.title) {
+    if !database::todo::is_available_title(connection, auth.id, &todo.title) {
         return (Status::Conflict, "the title is in conflict");
     }
 
     let new_todo = todo.attach(auth.id);
-    db::todo::write_todo(connection, new_todo);
+    database::todo::write_todo(connection, new_todo);
     (Status::Ok, "done")
 }
 
@@ -45,16 +45,16 @@ pub fn update_todo(
     let todo_update = todo_update.0;
     let connection = &mut establish_connection_pg();
 
-    if !db::todo::is_belonging_to(connection, auth.id, id) {
+    if !database::todo::is_belonging_to(connection, auth.id, id) {
         return (Status::Gone, "todo not found");
     }
 
     if todo_update.title.is_some() 
-        && !db::todo::is_available_title(connection, auth.id, &todo_update.title.as_ref().unwrap()) {
+        && !database::todo::is_available_title(connection, auth.id, &todo_update.title.as_ref().unwrap()) {
         return (Status::Gone, "the title is in conflict");
     }
 
-    if db::todo::update_todo(connection, todo_update.attach(auth.id, id)).is_err() {
+    if database::todo::update_todo(connection, todo_update.attach(auth.id, id)).is_err() {
         return (Status::Gone, "error updating");
     }
 
@@ -68,10 +68,10 @@ pub fn delete_todo(
 ) -> Status {
     let connection = &mut establish_connection_pg();
 
-    if !db::todo::is_belonging_to(connection, auth.id, id) {
+    if !database::todo::is_belonging_to(connection, auth.id, id) {
         return Status::Gone;
     }
-    if db::todo::delete_todo(connection, id).is_err() {
+    if database::todo::delete_todo(connection, id).is_err() {
         return Status::Gone;
     }
 
@@ -87,9 +87,9 @@ pub fn get_todos(from: i64, to: i64, auth: Auth) -> Result<Json<Vec<TodoJson>>, 
 
     let connection = &mut establish_connection_pg();
 
-    let results: Vec<TodoJson> = match db::user::read_user(connection, &auth.id) {
+    let results: Vec<TodoJson> = match database::user::read_user(connection, &auth.id) {
         Some(user) => {
-            let results = db::todo::read_todos(connection, &user, from, to);
+            let results = database::todo::read_todos(connection, &user, from, to);
             results.into_iter().map(|x| x.attach()).collect()
         },
         None => Vec::<TodoJson>::new()
@@ -102,22 +102,22 @@ pub fn get_todos(from: i64, to: i64, auth: Auth) -> Result<Json<Vec<TodoJson>>, 
 #[put("/todo/<id>/tag/<tag>")]
 pub fn put_add_tag(id: i32, tag: String, auth: Auth) -> (Status, String) {
     let connection = &mut establish_connection_pg();
-    if !db::todo::is_belonging_to(connection, auth.id, id) {
+    if !database::todo::is_belonging_to(connection, auth.id, id) {
         return (Status::NoContent, "you don't have a todo with this id".to_owned());
     }
-    let is_tag_existing = db::tag::is_user_tag_existing(connection, auth.id, &tag);
+    let is_tag_existing = database::tag::is_user_tag_existing(connection, auth.id, &tag);
     if is_tag_existing.is_err() {
         return (Status::InternalServerError, "error querying the database".to_owned());
     }
     let tag_id = if is_tag_existing.unwrap() {
-        db::tag::read_tag(connection, auth.id, &tag)
+        database::tag::read_tag(connection, auth.id, &tag)
     } else {
-        db::tag::write_tag(connection, &NewTag { tag_value: tag.clone() })
+        database::tag::write_tag(connection, &NewTag { tag_value: tag.clone() })
     };
     if tag_id.is_err() {
         return (Status::NotAcceptable, "database insert failed".to_owned());
     }
-    if db::tag::associate_todo_tag(connection, id, tag_id.unwrap()).is_err() {
+    if database::tag::associate_todo_tag(connection, id, tag_id.unwrap()).is_err() {
         return (
             Status::Conflict, 
             format!("todo id: {id} already has \"{}\" tag.", &tag)
@@ -129,10 +129,10 @@ pub fn put_add_tag(id: i32, tag: String, auth: Auth) -> (Status, String) {
 #[delete("/todo/<id>/tag/<tag>")]
 pub fn put_remove_tag(id: i32, tag: String, auth: Auth) -> Status {
     let connection = &mut establish_connection_pg();
-    if !db::todo::is_belonging_to(connection, auth.id, id) {
+    if !database::todo::is_belonging_to(connection, auth.id, id) {
         return Status::Gone;
     }
-    if db::tag::delete_todo_tag(connection, id, &tag).is_err() {
+    if database::tag::delete_todo_tag(connection, id, &tag).is_err() {
         return Status::Gone;
     }
     Status::Ok

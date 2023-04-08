@@ -1,9 +1,9 @@
-use rocket::{Request, catch, catchers, options};
+use rocket::{Request, catch, catchers, options, get};
 use cors::CORS;
 use rocket::{launch, routes};
 use dotenv::dotenv;
 
-mod db;
+mod database;
 mod cors;
 mod auth;
 mod config;
@@ -23,6 +23,11 @@ fn all_options() {
     /* Intentionally left empty */
 }
 
+#[get("/")]
+pub fn get_root() -> &'static str {
+    "{ \"msg\": \"ok\" }"
+}
+
 #[launch]
 pub fn rocket() -> _ {
     dotenv().ok();
@@ -31,6 +36,7 @@ pub fn rocket() -> _ {
         .mount(
             "/api", 
             routes![
+                get_root,
                 routes::user::username_available,
                 routes::user::create_user,
                 routes::user::list_users,

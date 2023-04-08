@@ -13,7 +13,7 @@ use chrono::{Duration, Utc};
 
 use crate::config::AppState;
 use crate::models::user::{NewUserJson, UserJson};
-use crate::db::user as db_user;
+use crate::database::user as db_user;
 use crate::auth::Auth;
 
 
