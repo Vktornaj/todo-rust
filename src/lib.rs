@@ -34,9 +34,14 @@ pub fn rocket() -> _ {
     rocket::custom(config::from_env())
         .attach(CORS)
         .mount(
+            "/", 
+            routes![
+                get_root
+            ]
+        )
+        .mount(
             "/api", 
             routes![
-                get_root,
                 routes::user::username_available,
                 routes::user::create_user,
                 routes::user::list_users,
@@ -49,7 +54,7 @@ pub fn rocket() -> _ {
                 routes::todo::put_add_tag,
                 routes::todo::put_remove_tag,
                 all_options,
-            ],
+            ]
         )
         .attach(config::AppState::manage())
         .register("/", catchers![not_found])

@@ -29,7 +29,7 @@ pub fn create_user(user: Json<NewUserJson>) -> (Status, String)  {
     let connection = &mut establish_connection_pg();
 
     if !db_user::is_available_username(connection, &user.0.username) {
-        return (Status::NotAcceptable, "username already exist".to_string());
+        return (Status::Conflict, "username already exist".to_string());
     }
     let mut new_user = user.0.attach();
     
