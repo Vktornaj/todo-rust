@@ -16,12 +16,15 @@ pub struct Auth {
     /// timestamp
     pub exp: i64,
     /// user id
-    pub id: i64,
+    pub username: String,
 }
 
 impl Auth {
-    pub fn new(id: i64) -> Self {
-        Auth { exp: (Utc::now() + Duration::days(60)).timestamp(), id }
+    pub fn new(username: &String) -> Self {
+        Auth { 
+            exp: (Utc::now() + Duration::days(60)).timestamp(), 
+            username: username.to_owned() 
+        }
     }
 
     pub fn token(&self, secret: &[u8]) -> String {

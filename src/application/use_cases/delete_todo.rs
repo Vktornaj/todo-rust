@@ -12,13 +12,13 @@ pub enum DeleteError {
 }
 
 fn execute(repo: &impl TodoRepository, token: &String, id: i64) -> Result<(), DeleteError> {
-    let user_id = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
-        auth.id
+    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+        auth.username
     } else {
         return Err(DeleteError::Unautorized("Invalid token".to_string()));
     };
     if repo.find_one(id).is_ok() {
-        match repo.delete(user_id, id) {
+        match repo.delete(&username, id) {
             Ok(_) => Ok(()),
             Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
         }

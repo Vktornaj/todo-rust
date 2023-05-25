@@ -11,12 +11,12 @@ pub enum UpdateError {
 }
 
 fn execute(repo: &impl TodoRepository, token: &String, update_todo: UpdateTodo) -> Result<Todo, UpdateError> {
-    let user_id = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
-        auth.id
+    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+        auth.username
     } else {
         return Err(UpdateError::Unautorized("Invalid token".to_string()));
     };
-    match repo.update(user_id, &update_todo) {
+    match repo.update(&username, &update_todo) {
         Ok(todo) => Ok(todo),
         Err(error) => Err(UpdateError::Unknown(format!("Unknown error: {:?}", error))),
     }

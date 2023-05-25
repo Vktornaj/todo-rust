@@ -12,8 +12,8 @@ pub enum UpdateError {
 }
 
 fn execute(repo: &impl TodoRepository, token: &String, todo_id: i64, tag: &String) -> Result<Todo, UpdateError> {
-    let user_id = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
-        auth.id
+    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+        auth.username
     } else {
         return Err(UpdateError::Unautorized("Invalid token".to_string()));
     };
@@ -27,7 +27,7 @@ fn execute(repo: &impl TodoRepository, token: &String, todo_id: i64, tag: &Strin
         return Err(UpdateError::Conflict(format!("Tag not found")));
     }
 
-    match repo.remove_tag(user_id, todo_id, &tag) {
+    match repo.remove_tag(&username, todo_id, &tag) {
         Ok(todo) => Ok(todo),
         Err(error) => Err(UpdateError::Unknown(format!("Unknown error: {:?}", error))),
     }

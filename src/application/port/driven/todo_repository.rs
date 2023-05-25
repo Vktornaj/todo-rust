@@ -37,15 +37,15 @@ pub trait TodoRepository {
     fn find_one(&self, id: i64) -> Result<Todo, RepoSelectError>;
 
     /// Find and return all records corresponding to the user
-    fn find_all(&self, user_id: i64, from: i64, to: i64) -> Result<Vec<Todo>, RepoFindAllError>;
+    fn find_all(&self, username: &String, from: i64, to: i64) -> Result<Vec<Todo>, RepoFindAllError>;
     
     /// Find and return one single record from the persistence system
-    fn find_one_criteria(&self, user_id: i64, find_todo: &FindTodo) -> Result<Todo, RepoSelectError>;
+    fn find_one_criteria(&self, username: &String, find_todo: &FindTodo) -> Result<Todo, RepoSelectError>;
 
     /// Find and return all records corresponding to the search criteria from the persistence system
     fn find_all_criteria(
         &self, 
-        user_id: i64,
+        username: &String,
         from: i64, 
         to: i64, 
         find_todo: &FindTodo
@@ -54,31 +54,31 @@ pub trait TodoRepository {
     /// Find and return all records corresponding to the search criteria from the persistence system
     fn find_all_date_range(
         &self, 
-        user_id: i64, 
+        username: &String, 
         from: i64, 
         to: i64, 
         find_todo_by_date_range: FindTodoByDateRange
     ) -> Result<Vec<Todo>, RepoFindAllError>;
 
     /// Insert the received entity in the persistence system
-    fn create(&self, user_id: i64, todo: &Todo) -> Result<Todo, RepoCreateError>;
+    fn create(&self, username: &String, todo: &Todo) -> Result<Todo, RepoCreateError>;
 
     /// Update one single record already present in the persistence system
-    fn update(&self, user_id: i64, todo: &UpdateTodo) -> Result<Todo, RepoUpdateError>;
+    fn update(&self, username: &String, todo: &UpdateTodo) -> Result<Todo, RepoUpdateError>;
     
     /// Update one single record already present in the persistence system
-    fn add_tag(&self, user_id: i64, todo_id: i64, tag: &String) -> Result<Todo, RepoUpdateError>;
+    fn add_tag(&self, username: &String, todo_id: i64, tag: &String) -> Result<Todo, RepoUpdateError>;
     
     /// Update one single record already present in the persistence system
-    fn remove_tag(&self, user_id: i64, todo_id: i64, tag: &String) -> Result<Todo, RepoUpdateError>;
+    fn remove_tag(&self, username: &String, todo_id: i64, tag: &String) -> Result<Todo, RepoUpdateError>;
 
     /// Delete one single record from the persistence system
-    fn delete(&self, user_id: i64, id: i64) -> Result<(), RepoDeleteError>;
+    fn delete(&self, username: &String, id: i64) -> Result<(), RepoDeleteError>;
     
     /// Delete one single record from the persistence system
     fn delete_all_criteria(
         &self, 
-        user_id: i64, 
+        username: &String, 
         find_todo: &FindTodo
     ) -> Result<(), RepoDeleteError>;
 }

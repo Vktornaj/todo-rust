@@ -8,12 +8,12 @@ use super::errors::{
 };
 
 
-pub trait TodoRepository {
+pub trait TagRepository {
     /// Find and return one single record from the persistence system
     fn find_one(&self, id: i32) -> Result<Tag, RepoSelectError>;
 
     /// Find and return all records corresponding to the search criteria from the persistence system
-    fn find_all(&self, user_id: i64, from: i64, to: i64) -> Result<Vec<Tag>, RepoFindAllError>;
+    fn find_all(&self, usernmae: &String, from: i64, to: i64) -> Result<Vec<Tag>, RepoFindAllError>;
     
     /// Insert the received entity in the persistence system
     fn create(&self, Tag: Tag) -> Result<Tag, RepoCreateError>;

@@ -12,8 +12,8 @@ pub enum DeleteError {
 }
 
 fn execute(repo: &impl TodoRepository, token: &String, tag: &String) -> Result<(), DeleteError> {
-    let user_id = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
-        auth.id
+    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+        auth.username
     } else {
         return Err(DeleteError::Unautorized("Invalid token".to_string()));
     };
@@ -23,7 +23,7 @@ fn execute(repo: &impl TodoRepository, token: &String, tag: &String) -> Result<(
         status: None,
         tags: Some(vec![tag.to_owned()]),
     };
-    match repo.delete_all_criteria(user_id, &find_todo) {
+    match repo.delete_all_criteria(&username, &find_todo) {
         Ok(_) => Ok(()),
         Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
     }
