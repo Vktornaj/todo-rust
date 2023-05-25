@@ -11,18 +11,11 @@ use crate::adapter::driving::web::token::Token;
 use crate::adapter::driving::web::models::user::{NewUserJson, UserJson};
 use crate::config::AppState;
 use crate::application::use_cases;
-use crate::domain::user::User;
 
 
+#[post("/register", format = "json", data = "<user>")]
 pub fn create_user(user: Json<NewUserJson>) -> (Status, String)  {
-    let mut _user: User = User {
-        id: None,
-        username: user.0.username,
-        first_name: Some(user.first_name),
-        last_name: Some(user.last_name),
-        password: user.password,
-    };
-    match use_cases::create_user::execute(&user_repository_pgsql::UserRepository::new(), &_user) {
+    match use_cases::create_user::execute(&user_repository_pgsql::UserRepository::new(), &mut user.to_user()) {
         Ok(_) => (Status::Ok, "".to_string()),
         Err(error) => match error {
             use_cases::create_user::CreateError::InvalidData(s) => (Status::BadRequest, s),
@@ -45,6 +38,7 @@ pub fn username_available(username: String) -> (Status, (ContentType, String)) {
 }
 
 
+#[get("/user/info")]
 pub fn get_user_info(token: Token) -> (Status, Option<Json<UserJson>>) {
     match use_cases::get_user_info::execute(
         &user_repository_pgsql::UserRepository::new(),
@@ -66,6 +60,7 @@ pub struct JsonToken {
     pub authorization_token: String,
     pub token_type: String,
 }
+// TODO: send state key
 #[post("/login", format = "json", data = "<credentials>")]
 pub fn login(
     credentials: Json<Credentials>,

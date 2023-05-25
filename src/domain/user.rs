@@ -16,7 +16,7 @@ pub struct User {
 
 impl User {
     // TODO: Reduce the runtime; 1.3 seconds
-    pub fn hash_password(&mut self) -> Result<(), Error>{
+    pub fn hash_password_mut(&mut self) -> Result<(), Error>{
         let salt = SaltString::generate(&mut OsRng);
 
         let argon2 = Argon2::default();

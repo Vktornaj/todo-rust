@@ -10,8 +10,8 @@ pub enum CreateError {
     Conflict(String)
 }
 
-pub fn execute(repo: &impl UserRepository, user: &User) -> Result<User, CreateError> {
-    if user.hash_password().is_err() {
+pub fn execute(repo: &impl UserRepository, user: &mut User) -> Result<User, CreateError> {
+    if user.hash_password_mut().is_err() {
         return Err(CreateError::InvalidData("Invalid password".to_string()));
     }
     if is_user_exist::execute(repo, &user.username) {
