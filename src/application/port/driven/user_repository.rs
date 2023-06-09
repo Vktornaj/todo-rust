@@ -19,8 +19,8 @@ pub trait UserRepository<T> {
     async fn create(&self, conn: &T, user: User) -> Result<User, RepoCreateError>;
 
     /// Update one single record already present in the persistence system
-    async fn update(&self, conn: &T, user: &User) -> Result<User, RepoUpdateError>;
+    async fn update(&self, conn: &T, user: User) -> Result<User, RepoUpdateError>;
 
     /// Delete one single record from the persistence system
-    async fn delete(&self, conn: &T, username: &String) -> Result<(), RepoDeleteError>;
+    async fn delete(&self, conn: &T, username: &String) -> Result<User, RepoDeleteError>;
 }
