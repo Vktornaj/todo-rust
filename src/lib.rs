@@ -42,7 +42,7 @@ pub fn rocket() -> _ {
         .mount(
             "/api", 
             routes![
-                // routes::user::username_available,
+                routes::user::username_available,
                 routes::user::create_user,
                 // routes::user::login,
                 // routes::user::get_user_info,

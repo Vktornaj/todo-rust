@@ -31,17 +31,18 @@ pub async fn create_user(connection: Db, user: Json<NewUserJson>) -> (Status, St
     }
 }
 
-// #[get("/get-username-availability/<username>")]
-// pub fn username_available(username: String) -> (Status, (ContentType, String)) {
-//     let is_available = use_cases::is_user_exist::execute(
-//         &user_repository::UserRepository::new(), 
-//         &username
-//     );
-//     (
-//         Status::Ok,
-//         (ContentType::JSON, format!("{{ \"isAvailable\": \"{is_available}\" }}"))
-//     )
-// }
+#[get("/get-username-availability/<username>")]
+pub async fn username_available(connection: Db, username: String) -> (Status, (ContentType, String)) {
+    let is_available = !use_cases::is_user_exist::execute(
+        &connection,
+        &user_repository::UserRepository {}, 
+        &username
+    ).await;
+    (
+        Status::Ok,
+        (ContentType::JSON, format!("{{ \"isAvailable\": \"{is_available}\" }}"))
+    )
+}
 
 // #[get("/user/info")]
 // pub fn get_user_info(token: Token) -> (Status, Option<Json<UserJson>>) {
