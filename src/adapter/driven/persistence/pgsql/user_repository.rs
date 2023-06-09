@@ -43,27 +43,24 @@ impl user_repository::UserRepository<Db> for UserRepository {
 
     async fn update(&self, conn: &Db, user: UserDomain) -> Result<UserDomain, errors::RepoUpdateError> {
         conn.run(move |c| {
-            let mut res = if let Some(first_name) = user.first_name {
-                match diesel::update(_user.filter(_username.eq(&user.username)))
+            let mut res = Err(errors::RepoUpdateError::InvalidData("db error".to_owned()));
+            if let Some(first_name) = user.first_name {
+                res = match diesel::update(_user.filter(_username.eq(&user.username)))
                     .set(_first_name.eq(first_name))
                     .get_result::<UserDB>(c) 
                 {
                     Ok(user_db) => Ok(user_db.to_user_domain()),
                     Err(_) => Err(errors::RepoUpdateError::Unknown("db error".to_owned()))
-                }
-            } else {
-                Err(errors::RepoUpdateError::InvalidData("db error".to_owned()))
+                };
             };
-            res = if let Some(last_name) = user.last_name {
-                match diesel::update(_user.filter(_username.eq(&user.username)))
+            if let Some(last_name) = user.last_name {
+                res = match diesel::update(_user.filter(_username.eq(&user.username)))
                     .set(_last_name.eq(last_name))
                     .get_result::<UserDB>(c) 
                 {
                     Ok(user_db) => Ok(user_db.to_user_domain()),
                     Err(_) => Err(errors::RepoUpdateError::Unknown("db error".to_owned()))
-                }
-            } else {
-                Err(errors::RepoUpdateError::InvalidData("db error".to_owned()))
+                };
             };
             res
         }).await
