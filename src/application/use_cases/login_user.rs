@@ -10,8 +10,8 @@ pub enum LoginError {
 }
 
 // TODO: Set correct passowrd
-pub fn execute(repo: &impl UserRepository, username: &String, password: &String) -> Result<String, LoginError> {
-    let user = if let Ok(user) = repo.find_one(username) {
+pub async fn execute<T>(conn: &T, repo: &impl UserRepository<T>, username: &String, password: &String) -> Result<String, LoginError> {
+    let user = if let Ok(user) = repo.find_one(conn, username).await {
         user
     } else {
         return Err(LoginError::InvalidData("User not found".to_string()));

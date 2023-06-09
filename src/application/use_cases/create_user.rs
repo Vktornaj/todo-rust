@@ -10,16 +10,15 @@ pub enum CreateError {
     Conflict(String)
 }
 
-pub fn execute(repo: &impl UserRepository, user: &mut User) -> Result<User, CreateError> {
+pub async fn execute<T>(conn: &T, repo: &impl UserRepository<T>, mut user: User) -> Result<User, CreateError> {
+    if is_user_exist::execute(conn, repo, &user.username).await {
+        return Err(CreateError::Conflict("Username is already in use".to_string()))
+    }
     if user.hash_password_mut().is_err() {
         return Err(CreateError::InvalidData("Invalid password".to_string()));
     }
-    if is_user_exist::execute(repo, &user.username) {
-        Err(CreateError::Conflict("Username is already in use".to_string()))
-    } else {
-        match repo.create(&user) {
-            Ok(user) => Ok(user),
-            Err(error) => Err(CreateError::Unknown(format!("Unknown error: {:?}", error))),
-        }
+    match repo.create(conn, user).await {
+        Ok(user) => Ok(user),
+        Err(error) => Err(CreateError::Unknown(format!("Unknown error: {:?}", error))),
     }
 }

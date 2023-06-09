@@ -11,6 +11,7 @@ mod cors;
 
 use adapter::driving::web::routes;
 
+
 #[catch(404)]
 fn not_found(req: &Request) -> String {
     format!("Sorry, '{}' is not a valid path.", req.uri())
@@ -41,10 +42,10 @@ pub fn rocket() -> _ {
         .mount(
             "/api", 
             routes![
-                routes::user::username_available,
+                // routes::user::username_available,
                 routes::user::create_user,
-                routes::user::login,
-                routes::user::get_user_info,
+                // routes::user::login,
+                // routes::user::get_user_info,
                 // routes::todo::post_todo,
                 // routes::todo::update_todo,
                 // routes::todo::delete_todo,
@@ -54,6 +55,7 @@ pub fn rocket() -> _ {
                 all_options,
             ]
         )
+        .attach(adapter::driven::persistence::pgsql::db::Db::fairing())
         .attach(config::AppState::manage())
         .register("/", catchers![not_found])
 }

@@ -10,7 +10,8 @@ rocket = { version = "0.5.0-rc.2", features=["json"]}
 rocket_sync_db_pools = { version = "0.1.0-rc.2", features = ["diesel_postgres_pool"] }
 chrono = { version = "0.4.24", features = ["serde"] }
 toml = "0.7.1"
-serde = { version = "1.0.146", features = ["derive"] }
+serde = "1.0.152"
+serde_json = "1.0"
 argon2 = "0.5.0"
 rand_core = { version = "0.6", features = ["std"] }
 jsonwebtoken = "8.3.0"

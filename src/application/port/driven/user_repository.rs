@@ -1,22 +1,26 @@
+use rocket::async_trait;
+
 use super::errors::{
     RepoCreateError, 
     RepoDeleteError, 
     RepoSelectError, 
     RepoUpdateError
 };
+
 use crate::domain::user::User;
 
 
-pub trait UserRepository {
-    /// Find and return one single record from the persistence system
-    fn find_one(&self, username: &String) -> Result<User, RepoSelectError>;
+#[async_trait]
+pub trait UserRepository<T> {
+    /// Find and return one single record from the persistence system    
+    async fn find_one(&self, conn: &T, username: &String) -> Result<User, RepoSelectError>;
 
     /// Insert the received entity in the persistence system
-    fn create(&self, user: &User) -> Result<User, RepoCreateError>;
+    async fn create(&self, conn: &T, user: User) -> Result<User, RepoCreateError>;
 
     /// Update one single record already present in the persistence system
-    fn update(&self, user: &User) -> Result<User, RepoUpdateError>;
+    async fn update(&self, conn: &T, user: &User) -> Result<User, RepoUpdateError>;
 
     /// Delete one single record from the persistence system
-    fn delete(&self, username: &String) -> Result<(), RepoDeleteError>;
+    async fn delete(&self, conn: &T, username: &String) -> Result<(), RepoDeleteError>;
 }
