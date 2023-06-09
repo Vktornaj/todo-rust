@@ -1596,6 +1596,7 @@ name = "todo-rust"
 version = "0.0.1"
 dependencies = [
  "argon2",
+ "async-trait",
  "chrono",
  "diesel",
  "diesel_derives",
