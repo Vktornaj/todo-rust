@@ -9,8 +9,14 @@ pub enum FindAllError {
     Unautorized(String),
 }
 
-pub fn execute(repo: &impl TodoRepository, token: &String, from: i64, to: i64) -> Result<Vec<Todo>, FindAllError> {
-    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+pub fn execute(
+    repo: &impl TodoRepository, 
+    secret: &[u8],
+    token: &String, 
+    from: i64, 
+    to: i64
+) -> Result<Vec<Todo>, FindAllError> {
+    let username = if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
     } else {
         return Err(FindAllError::Unautorized("Invalid token".to_string()));

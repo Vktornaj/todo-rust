@@ -44,8 +44,8 @@ pub fn rocket() -> _ {
             routes![
                 routes::user::username_available,
                 routes::user::create_user,
-                // routes::user::login,
-                // routes::user::get_user_info,
+                routes::user::login,
+                routes::user::get_user_info,
                 // routes::todo::post_todo,
                 // routes::todo::update_todo,
                 // routes::todo::delete_todo,

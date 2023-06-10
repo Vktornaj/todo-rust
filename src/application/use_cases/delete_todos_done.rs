@@ -10,8 +10,12 @@ pub enum DeleteError {
     Unautorized(String),
 }
 
-fn execute(repo: &impl TodoRepository, token: &String) -> Result<(), DeleteError> {
-    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+fn execute(
+    repo: &impl TodoRepository,
+    secret: &[u8], 
+    token: &String
+) -> Result<(), DeleteError> {
+    let username = if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
     } else {
         return Err(DeleteError::Unautorized("Invalid token".to_string()));

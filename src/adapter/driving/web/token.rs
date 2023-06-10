@@ -21,8 +21,8 @@ impl<'r> FromRequest<'r> for Token {
     /// Handlers with Token guard will fail with 503 error.
     /// Handlers with Option<Token> will be called with None.
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Token, Self::Error> {
-        let state = req.rocket().state::<AppState>().unwrap();
-        if let Some(token) = extract_token_from_request(req, &state.secret) {
+        // let state = req.rocket().state::<AppState>().unwrap();
+        if let Some(token) = extract_token_from_request(req) {
             Outcome::Success(Token { value: token })
         } else {
             Outcome::Failure((Status::Forbidden, ()))
@@ -30,7 +30,7 @@ impl<'r> FromRequest<'r> for Token {
     }
 }
 
-fn extract_token_from_request(request: &Request, secret: &[u8]) -> Option<String> {
+fn extract_token_from_request(request: &Request) -> Option<String> {
     let r = request
         .headers()
         .get_one("authorization")

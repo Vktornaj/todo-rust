@@ -10,9 +10,13 @@ pub enum CreateError {
     Unautorized(String),
 }
 
-// TODO: Set secret correctly
-fn execute(repo: &impl TodoRepository, token: &String, todo: &Todo) -> Result<Todo, CreateError> {
-    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+fn execute(
+    repo: &impl TodoRepository,
+    secret: &[u8],
+    token: &String,
+    todo: &Todo
+) -> Result<Todo, CreateError> {
+    let username = if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
     } else {
         return Err(CreateError::Unautorized("Invalid token".to_string()));

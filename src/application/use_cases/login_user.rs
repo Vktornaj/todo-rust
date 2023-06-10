@@ -9,8 +9,12 @@ pub enum LoginError {
     Conflict(String)
 }
 
-// TODO: Set correct passowrd
-pub async fn execute<T>(conn: &T, repo: &impl UserRepository<T>, username: &String, password: &String) -> Result<String, LoginError> {
+pub async fn execute<T>(
+    conn: &T, 
+    repo: &impl UserRepository<T>, 
+    secret: &[u8],
+    username: &String, password: &String
+) -> Result<String, LoginError> {
     let user = if let Ok(user) = repo.find_one(conn, username).await {
         user
     } else {
@@ -18,7 +22,7 @@ pub async fn execute<T>(conn: &T, repo: &impl UserRepository<T>, username: &Stri
     };
 
     if user.verify_password(password).is_ok() {
-        Ok(Auth::new(&user.username).token(&vec![0, 0]))
+        Ok(Auth::new(&user.username).token(secret))
     } else  {
         Err(LoginError::InvalidData("Invalid password".to_string()))
     }

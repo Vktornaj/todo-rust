@@ -8,7 +8,12 @@ pub enum FindError {
     Unautorized(String)
 }
 
-pub async fn execute<T>(conn: &T, repo: &impl UserRepository<T>, token: &String) -> Result<User, FindError> {
+pub async fn execute<T>(
+    conn: &T,
+    repo: &impl UserRepository<T>,
+    secret: &[u8],
+    token: &String
+) -> Result<User, FindError> {
     let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
         auth.username
     } else {
