@@ -38,12 +38,14 @@ impl Auth {
     // TODO: Determinate if token is valid by date
     pub fn from_token(token: &String, secret: &[u8]) -> Result<Self, AuthError> {
         if let Some(auth) = decode_token(token, secret) {
-            if Utc::now() <= Utc.timestamp_millis_opt(auth.exp).unwrap() {
+            if Utc::now() <= Utc.timestamp_opt(auth.exp, 0).unwrap() {
                 Ok(auth)
             } else {
-                return Err(AuthError::InvalidData("Invalid token".to_string()));
+                println!("token error: Expired token");
+                return Err(AuthError::InvalidData("Expired token".to_string()));
             }
         } else {
+            println!("token error: Invalid token");
             return Err(AuthError::InvalidData("Invalid token".to_string()));
         }
     }

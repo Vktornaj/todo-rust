@@ -46,15 +46,22 @@ pub async fn username_available(connection: Db, username: String) -> (Status, (C
 }
 
 #[get("/user/info")]
-pub async fn get_user_info(connection: Db, state: &State<AppState>, token: Token) -> (Status, Option<Json<UserJson>>) {
+pub async fn get_user_info(
+    connection: Db, 
+    state: &State<AppState>, 
+    token: Token
+) -> (Status, Json<Result<UserJson, String>>) {
     match use_cases::get_user_info::execute(
         &connection,
         &user_repository::UserRepository {},
         &state.secret,
         &token.value
     ).await {
-        Ok(user) => (Status::Ok, Some(Json(UserJson::from_user(user)))),
-        Err(_) => (Status::Gone, None),
+        Ok(user) => (Status::Ok, Json(Ok(UserJson::from_user(user)))),
+        Err(err) => match err {
+            use_cases::get_user_info::FindError::Unknown(_) => (Status::NotFound, Json(Err("".to_string()))),
+            use_cases::get_user_info::FindError::Unautorized(_) => (Status::Unauthorized, Json(Err("".to_string()))),
+        },
     }   
 }
 

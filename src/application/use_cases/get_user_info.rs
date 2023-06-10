@@ -14,13 +14,13 @@ pub async fn execute<T>(
     secret: &[u8],
     token: &String
 ) -> Result<User, FindError> {
-    let username = if let Ok(auth) = Auth::from_token(token, &vec![0, 0]) {
+    let username = if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
     } else {
         return Err(FindError::Unautorized("Invalid token".to_string()));
     };
     match repo.find_one(conn, &username).await {
         Ok(user) => Ok(user),
-        Err(error) => Err(FindError::Unknown("user not found".to_string())),
+        Err(_) => Err(FindError::Unknown("user not found".to_string())),
     }
 }
