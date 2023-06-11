@@ -11,11 +11,12 @@ pub enum UpdateError {
     Unautorized(String),
 }
 
-fn execute(
-    repo: &impl TodoRepository, 
-    token: &String,
+pub async fn execute<T>(
+    conn: &T,
+    repo: &impl TodoRepository<T>, 
     secret: &[u8],
-    todo_id: i64, 
+    token: &String,
+    todo_id: i32, 
     tag: &String
 ) -> Result<Todo, UpdateError> {
     let username = if let Ok(auth) = Auth::from_token(token, secret) {
@@ -23,7 +24,7 @@ fn execute(
     } else {
         return Err(UpdateError::Unautorized("Invalid token".to_string()));
     };
-    let todo = if let Ok(todo) = repo.find_one(todo_id) {
+    let todo = if let Ok(todo) = repo.find_one(conn, todo_id).await {
         todo
     } else {
         return Err(UpdateError::Unknown(format!("Unknown error")));
@@ -33,7 +34,7 @@ fn execute(
         return Err(UpdateError::Conflict(format!("Tag already exist")));
     }
 
-    match repo.add_tag(&username, todo_id, &tag) {
+    match repo.add_tag(conn, &username, todo_id, &tag).await {
         Ok(todo) => Ok(todo),
         Err(error) => Err(UpdateError::Unknown(format!("Unknown error: {:?}", error))),
     }

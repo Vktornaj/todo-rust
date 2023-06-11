@@ -1,66 +1,106 @@
-use crate::application::port::driven::todo_repository;
+extern crate diesel;
+use diesel::{prelude::*};
+use async_trait::async_trait;
+
+use crate::application::port::driven::{todo_repository, errors};
+use crate::domain::todo::Todo as TodoDomain;
+use super::db::Db;
 
 
-struct TodoRepository {}
+pub struct TodoRepository {}
 
-impl todo_repository::TodoRepository for TodoRepository {
-    fn find_one(&self, id: i64) -> Result<crate::domain::todo::Todo, crate::application::port::driven::errors::RepoSelectError> {
+#[async_trait]
+impl todo_repository::TodoRepository<Db> for TodoRepository {
+    async fn find_one(&self, conn: &Db,  id: i32) -> Result<TodoDomain, errors::RepoSelectError> {
         todo!()
     }
 
-    fn find_all(&self, username: &String, from: i64, to: i64) -> Result<Vec<crate::domain::todo::Todo>, crate::application::port::driven::errors::RepoFindAllError> {
-        todo!()
-    }
-
-    fn find_one_criteria(&self, username: &String, find_todo: &todo_repository::FindTodo) -> Result<crate::domain::todo::Todo, crate::application::port::driven::errors::RepoSelectError> {
-        todo!()
-    }
-
-    fn find_all_criteria(
+    async fn find_all(
         &self, 
+        conn: &Db, 
+        username: &String, 
+        from: i32, 
+        to: i32
+    ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
+        todo!()
+    }
+
+    async fn find_one_criteria(
+        &self, 
+        conn: &Db, 
+        username: &String, 
+        find_todo: &todo_repository::FindTodo
+    ) -> Result<TodoDomain, errors::RepoSelectError> {
+        todo!()
+    }
+
+    async fn find_all_criteria(
+        &self, conn: &Db, 
         username: &String,
-        from: i64, 
-        to: i64, 
+        from: i32, 
+        to: i32, 
         find_todo: &todo_repository::FindTodo
-    ) -> Result<Vec<crate::domain::todo::Todo>, crate::application::port::driven::errors::RepoFindAllError> {
+    ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
         todo!()
     }
 
-    fn find_all_date_range(
-        &self, 
+    async fn find_all_date_range(
+        &self, conn: &Db, 
         username: &String, 
-        from: i64, 
-        to: i64, 
+        from: i32, 
+        to: i32, 
         find_todo_by_date_range: todo_repository::FindTodoByDateRange
-    ) -> Result<Vec<crate::domain::todo::Todo>, crate::application::port::driven::errors::RepoFindAllError> {
+    ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
         todo!()
     }
 
-    fn create(&self, username: &String, todo: &crate::domain::todo::Todo) -> Result<crate::domain::todo::Todo, crate::application::port::driven::errors::RepoCreateError> {
-        todo!()
-    }
-
-    fn update(&self, username: &String, todo: &todo_repository::UpdateTodo) -> Result<crate::domain::todo::Todo, crate::application::port::driven::errors::RepoUpdateError> {
-        todo!()
-    }
-
-    fn add_tag(&self, username: &String, todo_id: i64, tag: &String) -> Result<crate::domain::todo::Todo, crate::application::port::driven::errors::RepoUpdateError> {
-        todo!()
-    }
-
-    fn remove_tag(&self, username: &String, todo_id: i64, tag: &String) -> Result<crate::domain::todo::Todo, crate::application::port::driven::errors::RepoUpdateError> {
-        todo!()
-    }
-
-    fn delete(&self, username: &String, id: i64) -> Result<(), crate::application::port::driven::errors::RepoDeleteError> {
-        todo!()
-    }
-
-    fn delete_all_criteria(
+    async fn create(
         &self, 
+        conn: &Db, 
+        username: &String, 
+        todo: TodoDomain
+    ) -> Result<TodoDomain, errors::RepoCreateError> {
+        todo!()
+    }
+
+    async fn update(
+        &self, 
+        conn: &Db, 
+        username: &String, 
+        todo: todo_repository::UpdateTodo
+    ) -> Result<TodoDomain, errors::RepoUpdateError> {
+        todo!()
+    }
+
+    async fn add_tag(
+        &self, 
+        conn: &Db, 
+        username: &String, 
+        todo_id: i32, 
+        tag: &String
+    ) -> Result<TodoDomain, errors::RepoUpdateError> {
+        todo!()
+    }
+
+    async fn remove_tag(
+        &self, 
+        conn: &Db, 
+        username: &String, 
+        todo_id: i32, 
+        tag: &String
+    ) -> Result<TodoDomain, errors::RepoUpdateError> {
+        todo!()
+    }
+
+    async fn delete(&self, conn: &Db, username: &String, id: i32) -> Result<TodoDomain, errors::RepoDeleteError> {
+        todo!()
+    }
+
+    async fn delete_all_criteria(
+        &self, conn: &Db, 
         username: &String, 
         find_todo: &todo_repository::FindTodo
-    ) -> Result<(), crate::application::port::driven::errors::RepoDeleteError> {
+    ) -> Result<Vec<TodoDomain>, crate::application::port::driven::errors::RepoDeleteError> {
         todo!()
     }
 }

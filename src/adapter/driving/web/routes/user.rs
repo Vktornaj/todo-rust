@@ -6,21 +6,20 @@ use rocket::{get, post, State};
 use rocket::serde::{json::Json, Serialize, Deserialize};
 
 use crate::adapter::driving::web::token::Token;
-use crate::adapter::driving::web::models::user::{NewUserJson, UserJson};
+use crate::adapter::driving::web::schemas::user::{NewUserJson, UserJson};
 use crate::adapter::driven::persistence::pgsql::db::Db;
 use crate::application::use_cases;
-
+use crate::config::AppState;
 
 // Persistence
-use crate::adapter::driven::persistence::pgsql::user_repository;
-use crate::config::AppState;
+use crate::adapter::driven::persistence::pgsql::user_repository::UserRepository;
 
 
 #[post("/register", format = "json", data = "<user>")]
 pub async fn create_user(connection: Db, user: Json<NewUserJson>) -> (Status, String)  {
     match use_cases::create_user::execute(
         &connection, 
-        &user_repository::UserRepository {}, 
+        &UserRepository {}, 
         user.to_user()
     ).await {
         Ok(_) => (Status::Ok, "".to_string()),
@@ -36,7 +35,7 @@ pub async fn create_user(connection: Db, user: Json<NewUserJson>) -> (Status, St
 pub async fn username_available(connection: Db, username: String) -> (Status, (ContentType, String)) {
     let is_available = !use_cases::is_user_exist::execute(
         &connection,
-        &user_repository::UserRepository {}, 
+        &UserRepository {}, 
         &username
     ).await;
     (
@@ -53,7 +52,7 @@ pub async fn get_user_info(
 ) -> (Status, Json<Result<UserJson, String>>) {
     match use_cases::get_user_info::execute(
         &connection,
-        &user_repository::UserRepository {},
+        &UserRepository {},
         &state.secret,
         &token.value
     ).await {
@@ -86,7 +85,7 @@ pub async fn login(
 
     match use_cases::login_user::execute(
         &connection,
-        &user_repository::UserRepository {},
+        &UserRepository {},
         &state.secret,
         &credentials.username, 
         &credentials.password

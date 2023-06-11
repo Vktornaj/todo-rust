@@ -10,11 +10,12 @@ pub enum CreateError {
     Unautorized(String),
 }
 
-fn execute(
-    repo: &impl TodoRepository,
+pub async fn execute<T>(
+    conn: &T,
+    repo: &impl TodoRepository<T>,
     secret: &[u8],
     token: &String,
-    todo: &Todo
+    todo: Todo
 ) -> Result<Todo, CreateError> {
     let username = if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
@@ -27,10 +28,10 @@ fn execute(
         status: None,
         tags: None,
     };
-    if repo.find_one_criteria(&username, &find_todo).is_ok() {
+    if repo.find_one_criteria(conn, &username, &find_todo).await.is_ok() {
         return Err(CreateError::Conflict("Title already exist".to_string()));
     }
-    match repo.create(&username, todo) {
+    match repo.create(conn, &username, todo).await {
         Ok(todo) => Ok(todo),
         Err(error) => Err(CreateError::Unknown(format!("Unknown error: {:?}", error))),
     }

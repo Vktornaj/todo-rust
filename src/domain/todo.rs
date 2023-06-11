@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 
 
+#[derive(Deserialize, Serialize)]
 pub enum Status {
     PENDING,
     STARTED,
@@ -9,45 +11,41 @@ pub enum Status {
     ABORTED,
 }
 
+impl TryFrom<i32> for Status {
+    type Error = ();
+
+    fn try_from(v: i32) -> Result<Self, Self::Error> {
+        match v {
+            x if x == Status::PENDING as i32 => Ok(Status::PENDING),
+            x if x == Status::STARTED as i32 => Ok(Status::STARTED),
+            x if x == Status::DONE as i32 => Ok(Status::DONE),
+            x if x == Status::PAUSED as i32 => Ok(Status::PAUSED),
+            x if x == Status::ABORTED as i32 => Ok(Status::ABORTED),
+            _ => Err(()),
+        }
+    }
+}
+
+// impl Status {
+//     pub fn from_u32(value: u8) -> Status {
+//         match value {
+//             0 => Status::PENDING,
+//             1 => Status::STARTED,
+//             2 => Status::DONE,
+//             3 => Status::PAUSED,
+//             4 => Status::ABORTED,
+//             _ => panic!("Unknown value: {}", value),
+//         }
+//     }
+// }
+
 pub struct Todo {
     pub id: Option<i32>,
     pub title: String,
     pub description: Option<String>,
     pub status: Status,
-    pub create_date: DateTime<Utc>,
+    pub create_date: Option<DateTime<Utc>>,
     pub done_date: Option<DateTime<Utc>>,
     pub deadline: Option<DateTime<Utc>>,
     pub tags: Vec<String>,
 }
-
-// impl Todo {
-//     pub fn set_title(&mut self, title: String) {
-//         self.title = title;
-//     }
-    
-//     pub fn set_description(&mut self, description: String) {
-//         self.description = Some(description);
-//     }
-
-//     pub fn set_status(&mut self, status: Status) {
-//         self.status = status;
-//     }
-    
-//     pub fn set_done_date(&mut self, done_date: DateTime<Utc>) {
-//         self.done_date = Some(done_date);
-//     }
-    
-//     pub fn set_deadline(&mut self, deadline: DateTime<Utc>) {
-//         self.deadline = Some(deadline);
-//     }
-
-//     pub fn add_tag(&mut self, tag: String) {
-//         self.tags.push(tag);
-//     }
-
-//     pub fn remove_tag(&mut self, tag: String) -> Option<usize> {
-//         let index = self.tags.iter().position(|x| x == &tag)?;
-//         self.tags.remove(index);
-//         Some(index)
-//     }
-// }

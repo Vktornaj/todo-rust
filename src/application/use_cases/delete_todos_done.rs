@@ -10,8 +10,9 @@ pub enum DeleteError {
     Unautorized(String),
 }
 
-fn execute(
-    repo: &impl TodoRepository,
+async fn execute<T>(
+    conn: &T,
+    repo: &impl TodoRepository<T>,
     secret: &[u8], 
     token: &String
 ) -> Result<(), DeleteError> {
@@ -26,7 +27,7 @@ fn execute(
         status: Some(Status::DONE), 
         tags: None 
     };
-    match repo.delete_all_criteria(&username, &find_todo) {
+    match repo.delete_all_criteria(conn, &username, &find_todo).await {
         Ok(_) => Ok(()),
         Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
     }

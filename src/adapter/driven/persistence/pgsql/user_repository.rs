@@ -1,6 +1,6 @@
 extern crate diesel;
 use diesel::{prelude::*};
-use rocket::async_trait;
+use async_trait::async_trait;
 
 use crate::application::port::driven::user_repository;
 use crate::domain::user::User as UserDomain;

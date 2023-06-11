@@ -11,19 +11,20 @@ pub enum DeleteError {
     Unautorized(String),
 }
 
-fn execute(
-    repo: &impl TodoRepository,
+pub async fn execute<T>(
+    conn: &T,
+    repo: &impl TodoRepository<T>,
     secret: &[u8],
     token: &String, 
-    id: i64
+    id: i32
 ) -> Result<(), DeleteError> {
     let username = if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
     } else {
         return Err(DeleteError::Unautorized("Invalid token".to_string()));
     };
-    if repo.find_one(id).is_ok() {
-        match repo.delete(&username, id) {
+    if repo.find_one(conn, id).await.is_ok() {
+        match repo.delete(conn, &username, id).await {
             Ok(_) => Ok(()),
             Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
         }

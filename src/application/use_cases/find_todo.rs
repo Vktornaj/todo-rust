@@ -9,16 +9,17 @@ pub enum FindError {
     Unauthorized(String)
 }
 
-fn execute(
-    repo: &impl TodoRepository,
+async fn execute<T>(
+    conn: &T,
+    repo: &impl TodoRepository<T>,
     secret: &[u8],
     token: &String,
-    id: i64
+    id: i32
 ) -> Result<Todo, FindError> {
     if Auth::from_token(token, secret).is_err() {
         return Err(FindError::Unauthorized("Invalid token".to_string()));
     };
-    match repo.find_one(id).ok() {
+    match repo.find_one(conn, id).await.ok() {
         Some(todo) => Ok(todo),
         None => Err(FindError::Unknown("not found".to_string())),
     }

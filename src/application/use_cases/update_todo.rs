@@ -6,12 +6,12 @@ use crate::{domain::{todo::Todo, auth::Auth}, application::port::driven::todo_re
 pub enum UpdateError {
     InvalidData(String),
     Unknown(String),
-    Conflict(String),
     Unautorized(String),
 }
 
-fn execute(
-    repo: &impl TodoRepository,
+pub async fn execute<T>(
+    conn: &T,
+    repo: &impl TodoRepository<T>,
     secret: &[u8],
     token: &String,
     update_todo: UpdateTodo
@@ -21,7 +21,7 @@ fn execute(
     } else {
         return Err(UpdateError::Unautorized("Invalid token".to_string()));
     };
-    match repo.update(&username, &update_todo) {
+    match repo.update(conn, &username, update_todo).await {
         Ok(todo) => Ok(todo),
         Err(error) => Err(UpdateError::Unknown(format!("Unknown error: {:?}", error))),
     }
