@@ -10,10 +10,10 @@ use crate::domain::todo::{Todo as TodoDomain, Status};
 #[diesel(table_name = _todo)]
 pub struct Todo {
     pub id: i32,
-    pub user_id: i32,
+    pub username: String,
     pub title: String,
     pub description: Option<String>,
-    pub status: u8,
+    pub status: i32,
     pub create_date: DateTime<Utc>,
     pub done_date: Option<DateTime<Utc>>,
     pub deadline: Option<DateTime<Utc>>,
@@ -32,12 +32,36 @@ impl Todo {
             tags,
         }
     }
+
+    pub fn from_tuple( 
+        tuple: (
+            i32,
+            String, 
+            String, 
+            Option<String>, 
+            i32, 
+            DateTime<Utc>, 
+            Option<DateTime<Utc>>, 
+            Option<DateTime<Utc>>
+        )
+    ) -> Self {
+        Todo {
+            id: tuple.0,
+            username: tuple.1,
+            title: tuple.2,
+            description: tuple.3,
+            status: tuple.4,
+            create_date: tuple.5,
+            done_date: tuple.6,
+            deadline: tuple.7,
+        }
+    }
 }
 
 #[derive(Insertable)]
 #[diesel(table_name = _todo)]
 pub struct NewTodo {
-    pub user_id: i32,
+    pub username: String,
     pub title: String,
     pub description: Option<String>,
     pub status: i32,
@@ -45,9 +69,9 @@ pub struct NewTodo {
 }
 
 impl NewTodo {
-    pub fn from_domain_todo(todo: TodoDomain, user_id: i32) -> Self {
+    pub fn from_domain_todo(todo: TodoDomain, username: &String) -> Self {
         NewTodo {
-            user_id,
+            username: username.to_owned(),
             title: todo.title,
             description: todo.description,
             status: todo.status as i32,

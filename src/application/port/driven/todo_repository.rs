@@ -13,6 +13,7 @@ use crate::domain::todo::{Todo, Status};
 
 
 pub struct FindTodo {
+    pub username: String,
     pub title: Option<String>,
     pub description: Option<String>,
     pub status: Option<Status>,
@@ -53,7 +54,7 @@ pub trait TodoRepository<T> {
         &self, 
         conn: &T, 
         username: &String, 
-        find_todo: &FindTodo
+        find_todo: FindTodo
     ) -> Result<Todo, RepoSelectError>;
 
     /// Find and return all records corresponding to the search criteria from the persistence system
@@ -62,7 +63,7 @@ pub trait TodoRepository<T> {
         username: &String,
         from: i32, 
         to: i32, 
-        find_todo: &FindTodo
+        find_todo: FindTodo
     ) -> Result<Vec<Todo>, RepoFindAllError>;
     
     /// Find and return all records corresponding to the search criteria from the persistence system
@@ -110,6 +111,6 @@ pub trait TodoRepository<T> {
     async fn delete_all_criteria(
         &self, conn: &T, 
         username: &String, 
-        find_todo: &FindTodo
+        find_todo: FindTodo
     ) -> Result<Vec<Todo>, RepoDeleteError>;
 }

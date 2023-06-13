@@ -17,7 +17,7 @@ diesel::table! {
 diesel::table! {
     _todo (id) {
         id -> Int4,
-        user_id -> Int4,
+        username -> Varchar,
         title -> Varchar,
         description -> Nullable<Varchar>,
         status -> Int4,
@@ -44,7 +44,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(_todo -> _user (user_id));
 diesel::joinable!(_todo_tag -> _tag (tag_id));
 diesel::joinable!(_todo_tag -> _todo (todo_id));
 

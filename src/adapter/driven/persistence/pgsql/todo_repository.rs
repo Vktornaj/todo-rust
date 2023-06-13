@@ -1,11 +1,33 @@
 extern crate diesel;
+use chrono::{DateTime, Utc};
 use diesel::{prelude::*};
 use async_trait::async_trait;
+use diesel::sql_types::{Nullable, Int4, Array, VarChar};
 
 use crate::application::port::driven::{todo_repository, errors};
 use crate::domain::todo::Todo as TodoDomain;
+use super::models::todo::{Todo as TodoDB, NewTodo as NewTodoDB};
 use super::db::Db;
+use crate::adapter::driven::persistence::pgsql::schema;
+use self::schema::_todo::dsl::{
+    _todo,
+};
 
+
+// Postgres functions
+// TODO: Improve
+sql_function! { 
+    fn find_todo_sql(
+        p_username: VarChar, p_title: Nullable<VarChar>, p_description: Nullable<VarChar>, p_status: Nullable<Int4>, p_tags: Nullable<Array<VarChar>>,
+    ) -> Record<(
+        Int4, VarChar, VarChar, Nullable<VarChar>, Int4, Timestamptz, Nullable<Timestamptz>, Nullable<Timestamptz>,
+    )>;
+}
+
+// TODO: Write PlPgSQL function
+sql_function! { 
+    fn find_tags_sql(todo_id: Int4) -> Array<VarChar>;
+}
 
 pub struct TodoRepository {}
 
@@ -29,9 +51,41 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         &self, 
         conn: &Db, 
         username: &String, 
-        find_todo: &todo_repository::FindTodo
+        find_todo: todo_repository::FindTodo
     ) -> Result<TodoDomain, errors::RepoSelectError> {
-        todo!()
+        match conn.run(move |c| {
+            let res = diesel::select(find_todo_sql(
+                find_todo.username,
+                find_todo.title,
+                find_todo.description,
+                find_todo.status.and_then(|x| Some(x as i32)),
+                find_todo.tags
+            )).get_result::<(
+                i32,
+                String, 
+                String, 
+                Option<String>, 
+                i32, 
+                DateTime<Utc>, 
+                Option<DateTime<Utc>>, 
+                Option<DateTime<Utc>>
+            )>(c);
+            match res {
+                Ok(
+                    todo_tuple
+                ) => match diesel::select(find_tags_sql(todo_tuple.0)).get_result::<Vec<String>>(c) {
+                    Ok(tags) => Ok((todo_tuple, tags)),
+                    Err(_) => Err(errors::RepoSelectError::NotFound),
+                },
+                Err(_) => Err(errors::RepoSelectError::Unknown("".to_owned())),
+            }
+        }).await {
+            Ok((
+                todo_tuple, 
+                tags
+            )) => Ok(TodoDB::from_tuple(todo_tuple).to_domain_todo(tags)),
+            Err(err) => Err(err)
+        }
     }
 
     async fn find_all_criteria(
@@ -39,7 +93,7 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         username: &String,
         from: i32, 
         to: i32, 
-        find_todo: &todo_repository::FindTodo
+        find_todo: todo_repository::FindTodo
     ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
         todo!()
     }
@@ -60,7 +114,17 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         username: &String, 
         todo: TodoDomain
     ) -> Result<TodoDomain, errors::RepoCreateError> {
-        todo!()
+        let tags = todo.tags.clone();
+        let username = username.to_owned();
+        // TODO: Create tags
+        match conn.run(move |c| {
+            diesel::insert_into(_todo)
+                .values(NewTodoDB::from_domain_todo(todo, &username))
+                .get_result::<TodoDB>(c)
+        }).await {
+            Ok(user_db) => Ok(user_db.to_domain_todo(tags)),
+            Err(_) => Err(errors::RepoCreateError::Unknown("db error".to_owned()))
+        }
     }
 
     async fn update(
@@ -99,7 +163,7 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
     async fn delete_all_criteria(
         &self, conn: &Db, 
         username: &String, 
-        find_todo: &todo_repository::FindTodo
+        find_todo: todo_repository::FindTodo
     ) -> Result<Vec<TodoDomain>, crate::application::port::driven::errors::RepoDeleteError> {
         todo!()
     }

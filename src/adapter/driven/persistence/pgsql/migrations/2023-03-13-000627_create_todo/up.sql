@@ -1,7 +1,7 @@
 -- Your SQL goes here
 CREATE TABLE _user (
     id SERIAL PRIMARY KEY,
-    username VARCHAR NOT NULL,
+    username VARCHAR NOT NULL UNIQUE,
     first_name VARCHAR,
     last_name VARCHAR,
     password VARCHAR NOT NULL
@@ -19,14 +19,14 @@ CREATE TABLE _tag (
 
 CREATE TABLE _todo (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    username VARCHAR NOT NULL,
     title VARCHAR NOT NULL,
     description VARCHAR,
     status INT NOT NULL,
     create_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     done_date TIMESTAMP WITH TIME ZONE,
     deadline TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES _user(id)
+    CONSTRAINT fk_user FOREIGN KEY(username) REFERENCES _user(username)
 );
 
 CREATE TABLE _todo_tag (
@@ -38,7 +38,7 @@ CREATE TABLE _todo_tag (
 );
 
 -- Functions
-CREATE FUNCTION find_user_by_username(_username text) 
+CREATE FUNCTION find_user_by_username(_username text)
 RETURNS TABLE (
     id integer,
     first_name text,
@@ -47,7 +47,7 @@ RETURNS TABLE (
     BEGIN
         RETURN QUERY
         SELECT id, first_name, last_name
-        FROM users AS u
+        FROM _user AS u
         WHERE u.username = _username;
     END;
 $$ LANGUAGE plpgsql;

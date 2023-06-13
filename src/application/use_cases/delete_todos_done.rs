@@ -21,13 +21,14 @@ async fn execute<T>(
     } else {
         return Err(DeleteError::Unautorized("Invalid token".to_string()));
     };
-    let find_todo = FindTodo { 
+    let find_todo = FindTodo {
+        username: (&username).to_owned(),
         title: None, 
         description: None, 
         status: Some(Status::DONE), 
-        tags: None 
+        tags: None,
     };
-    match repo.delete_all_criteria(conn, &username, &find_todo).await {
+    match repo.delete_all_criteria(conn, &username, find_todo).await {
         Ok(_) => Ok(()),
         Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
     }

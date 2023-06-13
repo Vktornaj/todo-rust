@@ -5,4 +5,4 @@
 file = "src/adapter/driven/persistence/pgsql/schema.rs"
 
 [migrations_directory]
-dir = "migrations"
+dir = "src/adapter/driven/persistence/pgsql/migrations"
