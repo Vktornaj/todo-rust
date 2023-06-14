@@ -29,13 +29,18 @@ pub async fn execute<T>(
         status: None,
         tags: None,
     };
+    println!("Begining");
+    println!("user: {}", &username);
     let res = repo.find_one_criteria(conn, &username, find_todo).await;
+    println!("res: {:?}", res);
     if res.is_ok() {
         return Err(CreateError::Conflict("Title already exist".to_string()));
     }
+    println!("Title does not exist");
     if let Err(RepoSelectError::Unknown(msg)) = res {
         return Err(CreateError::Unknown(msg));
     }
+    println!("RepoSelectError");
     match repo.create(conn, &username, todo).await {
         Ok(todo) => Ok(todo),
         Err(error) => Err(CreateError::Unknown(format!("Unknown error: {:?}", error))),

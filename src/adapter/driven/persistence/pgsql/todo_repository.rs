@@ -26,7 +26,11 @@ sql_function! {
 
 // TODO: Write PlPgSQL function
 sql_function! { 
-    fn find_tags_sql(todo_id: Int4) -> Array<VarChar>;
+    fn find_tags_sql(p_todo_id: Int4) -> Nullable<Array<VarChar>>;
+}
+
+sql_function! { 
+    fn create_tag_if_not_exists_in_user(p_tag_value: VarChar, p_username: VarChar);
 }
 
 pub struct TodoRepository {}
@@ -73,17 +77,33 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
             match res {
                 Ok(
                     todo_tuple
-                ) => match diesel::select(find_tags_sql(todo_tuple.0)).get_result::<Vec<String>>(c) {
+                ) => match diesel::select(find_tags_sql(todo_tuple.0)).get_result::<Option<Vec<String>>>(c) {
                     Ok(tags) => Ok((todo_tuple, tags)),
-                    Err(_) => Err(errors::RepoSelectError::NotFound),
+                    Err(err) => {
+                        println!("err: {}", err);
+                        Err(errors::RepoSelectError::Unknown("Not found tags".to_owned()))
+                    },
                 },
-                Err(_) => Err(errors::RepoSelectError::Unknown("".to_owned())),
+                Err(err) => match err {
+                    // diesel::result::Error::InvalidCString(_) => todo!(),
+                    // diesel::result::Error::DatabaseError(_, _) => todo!(),
+                    diesel::result::Error::NotFound => Err(errors::RepoSelectError::NotFound),
+                    // diesel::result::Error::QueryBuilderError(_) => todo!(),
+                    // diesel::result::Error::DeserializationError(_) => todo!(),
+                    // diesel::result::Error::SerializationError(_) => todo!(),
+                    // diesel::result::Error::RollbackErrorOnCommit { rollback_error, commit_error } => todo!(),
+                    // diesel::result::Error::RollbackTransaction => todo!(),
+                    // diesel::result::Error::AlreadyInTransaction => todo!(),
+                    // diesel::result::Error::NotInTransaction => todo!(),
+                    // diesel::result::Error::BrokenTransactionManager => todo!(),
+                    _ => Err(errors::RepoSelectError::Unknown("".to_owned())),
+                },
             }
         }).await {
             Ok((
                 todo_tuple, 
                 tags
-            )) => Ok(TodoDB::from_tuple(todo_tuple).to_domain_todo(tags)),
+            )) => Ok(TodoDB::from_tuple(todo_tuple).to_domain_todo(tags.unwrap_or(Vec::new()))),
             Err(err) => Err(err)
         }
     }
@@ -108,6 +128,7 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         todo!()
     }
 
+    // TODO: fix this function
     async fn create(
         &self, 
         conn: &Db, 
@@ -115,14 +136,26 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         todo: TodoDomain
     ) -> Result<TodoDomain, errors::RepoCreateError> {
         let tags = todo.tags.clone();
+        let tags_2 = todo.tags.clone();
         let username = username.to_owned();
-        // TODO: Create tags
         match conn.run(move |c| {
-            diesel::insert_into(_todo)
+            let res: Result<TodoDB, diesel::result::Error> = diesel::insert_into(_todo)
                 .values(NewTodoDB::from_domain_todo(todo, &username))
-                .get_result::<TodoDB>(c)
+                .get_result::<TodoDB>(c);
+            match res {
+                Ok(todo) => {
+                    for tag in tags.iter() {
+                        if let Err(_) = diesel::select(create_tag_if_not_exists_in_user(tag, &username))
+                        .execute(c) {
+                            return Err(errors::RepoCreateError::Unknown("".to_owned()));
+                        };
+                    }
+                    Ok(todo)
+                },
+                Err(_) => Err(errors::RepoCreateError::Unknown("".to_owned()))
+            }
         }).await {
-            Ok(user_db) => Ok(user_db.to_domain_todo(tags)),
+            Ok(todo) => Ok(todo.to_domain_todo(tags_2)),
             Err(_) => Err(errors::RepoCreateError::Unknown("db error".to_owned()))
         }
     }

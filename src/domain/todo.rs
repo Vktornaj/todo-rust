@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 
 
+#[derive(Debug)]
 #[derive(Deserialize, Serialize)]
 pub enum Status {
     PENDING,
@@ -39,6 +40,7 @@ impl TryFrom<i32> for Status {
 //     }
 // }
 
+#[derive(Debug)]
 pub struct Todo {
     pub id: Option<i32>,
     pub title: String,
