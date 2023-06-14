@@ -6,11 +6,14 @@ use diesel::sql_types::{Nullable, Int4, Array, VarChar};
 
 use crate::application::port::driven::{todo_repository, errors};
 use crate::domain::todo::Todo as TodoDomain;
-use super::models::todo::{Todo as TodoDB, NewTodo as NewTodoDB};
+use super::models::todo::{Todo as TodoDB, NewTodo as NewTodoDB, NewTodoTag};
 use super::db::Db;
 use crate::adapter::driven::persistence::pgsql::schema;
 use self::schema::_todo::dsl::{
     _todo,
+};
+use self::schema::_todo_tag::dsl::{
+    _todo_tag,
 };
 
 
@@ -30,7 +33,7 @@ sql_function! {
 }
 
 sql_function! { 
-    fn create_tag_if_not_exists_in_user(p_tag_value: VarChar, p_username: VarChar);
+    fn create_tag(p_tag_value: VarChar, p_username: VarChar) -> Record<(Int4, VarChar)>;
 }
 
 pub struct TodoRepository {}
@@ -128,7 +131,6 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         todo!()
     }
 
-    // TODO: fix this function
     async fn create(
         &self, 
         conn: &Db, 
@@ -145,10 +147,20 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
             match res {
                 Ok(todo) => {
                     for tag in tags.iter() {
-                        if let Err(_) = diesel::select(create_tag_if_not_exists_in_user(tag, &username))
-                        .execute(c) {
+                        let res = diesel::select(
+                            create_tag(tag, &username)
+                        ).get_result::<(i32, String)>(c);
+                        if let Ok((tag_id, _)) = res {
+                            if diesel::insert_into(_todo_tag)
+                                .values(NewTodoTag { tag_id, todo_id: todo.id })
+                                .execute(c).is_err() {
+                                return Err(errors::RepoCreateError::Unknown("".to_owned()));
+                            }
+                        }; 
+                        if let Err(err) = res {
+                            println!("err: {}", err);
                             return Err(errors::RepoCreateError::Unknown("".to_owned()));
-                        };
+                        }
                     }
                     Ok(todo)
                 },

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use diesel::{prelude::*};
 
-use super::super::schema::_todo;
+use super::super::schema::{_todo, _todo_tag};
 use crate::domain::todo::{Todo as TodoDomain, Status};
 
 
@@ -78,4 +78,11 @@ impl NewTodo {
             deadline: todo.deadline,
         }
     }
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = _todo_tag)]
+pub struct NewTodoTag {
+    pub todo_id: i32,
+    pub tag_id: i32
 }
