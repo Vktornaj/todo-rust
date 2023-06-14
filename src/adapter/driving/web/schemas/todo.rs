@@ -18,6 +18,18 @@ pub struct TodoJson {
 }
 
 impl TodoJson {
+    pub fn new() -> Self {
+        TodoJson { 
+            id: None, 
+            title: None, 
+            description: None, 
+            status: None, 
+            create_date: None, 
+            done_date: None, 
+            deadline: None, 
+            tags: None 
+        }
+    }
     pub fn from_domain_todo(todo: TodoDomain) -> Self {
         TodoJson { 
             id: todo.id, 

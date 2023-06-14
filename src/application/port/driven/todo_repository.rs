@@ -82,7 +82,6 @@ pub trait TodoRepository<T> {
     async fn update(
         &self, 
         conn: &T, 
-        username: &String, 
         todo: UpdateTodo
     ) -> Result<Todo, RepoUpdateError>;
     

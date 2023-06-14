@@ -2,7 +2,7 @@ extern crate diesel;
 use chrono::{DateTime, Utc};
 use diesel::{prelude::*};
 use async_trait::async_trait;
-use diesel::sql_types::{Nullable, Int4, Array, VarChar};
+use diesel::sql_types::{Nullable, Int4, Array, VarChar, Timestamptz};
 
 use crate::application::port::driven::{todo_repository, errors};
 use crate::domain::todo::Todo as TodoDomain;
@@ -18,22 +18,44 @@ use self::schema::_todo_tag::dsl::{
 
 
 // Postgres functions
-// TODO: Improve
 sql_function! { 
     fn find_todo_sql(
-        p_username: VarChar, p_title: Nullable<VarChar>, p_description: Nullable<VarChar>, p_status: Nullable<Int4>, p_tags: Nullable<Array<VarChar>>,
+        p_username: VarChar, 
+        p_title: Nullable<VarChar>, 
+        p_description: Nullable<VarChar>, 
+        p_status: Nullable<Int4>, 
+        p_tags: Nullable<Array<VarChar>>,
     ) -> Record<(
         Int4, VarChar, VarChar, Nullable<VarChar>, Int4, Timestamptz, Nullable<Timestamptz>, Nullable<Timestamptz>,
     )>;
 }
 
-// TODO: Write PlPgSQL function
 sql_function! { 
     fn find_tags_sql(p_todo_id: Int4) -> Nullable<Array<VarChar>>;
 }
 
 sql_function! { 
     fn create_tag(p_tag_value: VarChar, p_username: VarChar) -> Record<(Int4, VarChar)>;
+}
+
+sql_function! { 
+    fn update_todo(
+        p_id: Int4,
+        p_title: Nullable<VarChar>, 
+        p_description: Nullable<VarChar>, 
+        p_status: Nullable<Int4>, 
+        p_done_date: Nullable<Timestamptz>, 
+        p_deadline: Nullable<Timestamptz>, 
+    ) -> Record<(
+        Int4, 
+        VarChar, 
+        VarChar, 
+        Nullable<VarChar>, 
+        Int4, 
+        Timestamptz, 
+        Nullable<Timestamptz>, 
+        Nullable<Timestamptz>,
+    )>;
 }
 
 pub struct TodoRepository {}
@@ -175,10 +197,61 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
     async fn update(
         &self, 
         conn: &Db, 
-        username: &String, 
         todo: todo_repository::UpdateTodo
     ) -> Result<TodoDomain, errors::RepoUpdateError> {
-        todo!()
+        match conn.run(move |c| {
+            let res = diesel::select(update_todo(
+                todo.id,
+                todo.title,
+                todo.description,
+                todo.status.and_then(|x| Some(x as i32)),
+                todo.deadline,
+                todo.done_date
+            )).get_result::<(
+                i32,
+                String, 
+                String, 
+                Option<String>, 
+                i32, 
+                DateTime<Utc>, 
+                Option<DateTime<Utc>>, 
+                Option<DateTime<Utc>>
+            )>(c);
+            match res {
+                Ok(
+                    todo_tuple
+                ) => match diesel::select(find_tags_sql(todo_tuple.0)).get_result::<Option<Vec<String>>>(c) {
+                    Ok(tags) => Ok((todo_tuple, tags)),
+                    Err(err) => {
+                        println!("err: {}", err);
+                        Err(errors::RepoUpdateError::Unknown("Not found tags".to_owned()))
+                    },
+                },
+                Err(err) => {
+                    println!("err: {:?}", &err);
+                    match err {
+                        // diesel::result::Error::InvalidCString(_) => todo!(),
+                        // diesel::result::Error::DatabaseError(_, _) => todo!(),
+                        diesel::result::Error::NotFound => Err(errors::RepoUpdateError::NotFound),
+                        // diesel::result::Error::QueryBuilderError(_) => todo!(),
+                        // diesel::result::Error::DeserializationError(_) => todo!(),
+                        // diesel::result::Error::SerializationError(_) => todo!(),
+                        // diesel::result::Error::RollbackErrorOnCommit { rollback_error, commit_error } => todo!(),
+                        // diesel::result::Error::RollbackTransaction => todo!(),
+                        // diesel::result::Error::AlreadyInTransaction => todo!(),
+                        // diesel::result::Error::NotInTransaction => todo!(),
+                        // diesel::result::Error::BrokenTransactionManager => todo!(),
+                        _ => Err(errors::RepoUpdateError::Unknown("".to_owned())),
+                    }
+                },
+            }
+        }).await {
+            Ok((
+                todo_tuple, 
+                tags
+            )) => Ok(TodoDB::from_tuple(todo_tuple).to_domain_todo(tags.unwrap_or(Vec::new()))),
+            Err(err) => Err(err)
+        }
     }
 
     async fn add_tag(

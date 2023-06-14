@@ -51,7 +51,7 @@ pub async fn update_todo(
     state: &State<AppState>, 
     token: Token,
     todo: Json<TodoJson>
-) -> (Status, &'static str) {
+) -> (Status, Json<TodoJson>) {
     match use_cases::update_todo::execute(
         &connection, 
         &TodoRepository {}, 
@@ -59,11 +59,11 @@ pub async fn update_todo(
         &token.value, 
         todo.0.to_update_todo()
     ).await {
-        Ok(_) => (Status::Ok, "done"),
+        Ok(todo) => (Status::Ok, Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            UpdateError::InvalidData(_) => (Status::BadRequest, ""),
-            UpdateError::Unknown(_) => (Status::InternalServerError, ""),
-            UpdateError::Unautorized(_) => (Status::Unauthorized, ""),
+            UpdateError::InvalidData(_) => (Status::BadRequest, Json(TodoJson::new())),
+            UpdateError::Unknown(_) => (Status::InternalServerError, Json(TodoJson::new())),
+            UpdateError::Unautorized(_) => (Status::Unauthorized, Json(TodoJson::new())),
         },
     }
 }

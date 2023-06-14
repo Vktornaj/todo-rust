@@ -16,12 +16,12 @@ pub async fn execute<T>(
     token: &String,
     update_todo: UpdateTodo
 ) -> Result<Todo, UpdateError> {
-    let username = if let Ok(auth) = Auth::from_token(token, secret) {
+    if let Ok(auth) = Auth::from_token(token, secret) {
         auth.username
     } else {
         return Err(UpdateError::Unautorized("Invalid token".to_string()));
     };
-    match repo.update(conn, &username, update_todo).await {
+    match repo.update(conn,  update_todo).await {
         Ok(todo) => Ok(todo),
         Err(error) => Err(UpdateError::Unknown(format!("Unknown error: {:?}", error))),
     }
