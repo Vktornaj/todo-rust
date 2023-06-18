@@ -1,5 +1,7 @@
 extern crate diesel;
 use chrono::{DateTime, Utc};
+use diesel::result;
+use diesel::pg::{PgConnection};
 use diesel::{prelude::*};
 use async_trait::async_trait;
 use diesel::sql_types::{Nullable, Int4, Array, VarChar, Timestamptz};
@@ -11,6 +13,8 @@ use super::db::Db;
 use crate::adapter::driven::persistence::pgsql::schema;
 use self::schema::_todo::dsl::{
     _todo,
+    username as _todo_username,
+    id as _todo_id,
 };
 use self::schema::_todo_tag::dsl::{
     _todo_tag,
@@ -63,17 +67,74 @@ pub struct TodoRepository {}
 #[async_trait]
 impl todo_repository::TodoRepository<Db> for TodoRepository {
     async fn find_one(&self, conn: &Db,  id: i32) -> Result<TodoDomain, errors::RepoSelectError> {
-        todo!()
+        match conn.run(move |c| {
+            let res = _todo.find(id)
+                .get_result::<TodoDB>(c);
+            match res {
+                Ok(
+                    todo
+                ) => match diesel::select(find_tags_sql(todo.id)).get_result::<Option<Vec<String>>>(c) {
+                    Ok(tags) => Ok((todo, tags)),
+                    Err(err) => {
+                        println!("err: {}", err);
+                        Err(errors::RepoSelectError::Unknown("Not found tags".to_owned()))
+                    },
+                },
+                Err(err) => match err {
+                    result::Error::NotFound => Err(errors::RepoSelectError::NotFound),
+                    _ => Err(errors::RepoSelectError::Unknown("".to_owned())),
+                },
+            }
+        }).await {
+            Ok((
+                todo, 
+                tags
+            )) => Ok(todo.to_domain_todo(tags.unwrap_or(Vec::new()))),
+            Err(err) => Err(err)
+        }
     }
 
     async fn find_all(
         &self, 
         conn: &Db, 
         username: &String, 
-        from: i32, 
-        to: i32
+        offset: i32, 
+        limit: i32
     ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
-        todo!()
+        let username = username.to_owned();
+        match conn.run(move |c| {
+            let res: Result<Vec<TodoDB>, result::Error> = _todo.filter(_todo_username.eq(username))
+                .order(_todo_id)
+                .limit(limit as i64)
+                .offset(offset as i64)
+                .load::<TodoDB>(c);
+            match res {
+                Ok(todos) => {
+                    let res = todos.into_iter().map(|x| {
+                        match diesel::select(find_tags_sql(x.id)).get_result::<Option<Vec<String>>>(c) {
+                            Ok(tags) => Ok((x, tags)),
+                            Err(err) => {
+                                println!("err: {}", err);
+                                Err(errors::RepoFindAllError::Unknown("Not found tags".to_owned()))
+                            },
+                        }
+                    }).collect::<Vec<Result<(TodoDB, Option<Vec<String>>), errors::RepoFindAllError>>>();
+                    Ok(res)
+                },
+                Err(err) => match err {
+                    result::Error::NotFound => Err(errors::RepoFindAllError::Unknown("".to_owned())),
+                    _ => Err(errors::RepoFindAllError::Unknown("".to_owned())),
+                },
+            }
+        }).await {
+            Ok(todos_tags_tuple) => {
+                Ok(todos_tags_tuple.into_iter().map(|x| {
+                    let (todo, tags) = x.unwrap();
+                    todo.to_domain_todo(tags.unwrap_or(Vec::new()))
+                }).collect())
+            },
+            Err(err) => Err(err)
+        }
     }
 
     async fn find_one_criteria(
@@ -110,17 +171,7 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
                     },
                 },
                 Err(err) => match err {
-                    // diesel::result::Error::InvalidCString(_) => todo!(),
-                    // diesel::result::Error::DatabaseError(_, _) => todo!(),
-                    diesel::result::Error::NotFound => Err(errors::RepoSelectError::NotFound),
-                    // diesel::result::Error::QueryBuilderError(_) => todo!(),
-                    // diesel::result::Error::DeserializationError(_) => todo!(),
-                    // diesel::result::Error::SerializationError(_) => todo!(),
-                    // diesel::result::Error::RollbackErrorOnCommit { rollback_error, commit_error } => todo!(),
-                    // diesel::result::Error::RollbackTransaction => todo!(),
-                    // diesel::result::Error::AlreadyInTransaction => todo!(),
-                    // diesel::result::Error::NotInTransaction => todo!(),
-                    // diesel::result::Error::BrokenTransactionManager => todo!(),
+                    result::Error::NotFound => Err(errors::RepoSelectError::NotFound),
                     _ => Err(errors::RepoSelectError::Unknown("".to_owned())),
                 },
             }
@@ -140,17 +191,44 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         to: i32, 
         find_todo: todo_repository::FindTodo
     ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
-        todo!()
-    }
-
-    async fn find_all_date_range(
-        &self, conn: &Db, 
-        username: &String, 
-        from: i32, 
-        to: i32, 
-        find_todo_by_date_range: todo_repository::FindTodoByDateRange
-    ) -> Result<Vec<TodoDomain>, errors::RepoFindAllError> {
-        todo!()
+        match conn.run(move |c| {
+            let res = diesel::select(find_todo_sql(
+                find_todo.username,
+                find_todo.title,
+                find_todo.description,
+                find_todo.status.and_then(|x| Some(x as i32)),
+                find_todo.tags
+            )).get_results::<(
+                i32,
+                String, 
+                String, 
+                Option<String>, 
+                i32, 
+                DateTime<Utc>, 
+                Option<DateTime<Utc>>, 
+                Option<DateTime<Utc>>
+            )>(c);
+            match res {
+                Ok(todo_tuples) => {
+                    let todo_tag_tuples: Vec<Result<TodoDomain, errors::RepoFindAllError>> = todo_tuples.into_iter().map(
+                        |x| {
+                            if let Ok(todo) = to_domain_todo(c, TodoDB::from_tuple(x)) {
+                                Ok(todo)
+                            } else {
+                                Err(errors::RepoFindAllError::Unknown("".to_string()))
+                            }
+                        }
+                    ).collect();
+                    Ok(todo_tag_tuples)
+                },
+                Err(_) => Err(errors::RepoFindAllError::Unknown("".to_owned()))
+            }
+        }).await {
+            Ok(todos) => {
+               todos.into_iter().filter(|x| x.is_ok()).collect()
+            },
+            Err(err) => Err(err)
+        }
     }
 
     async fn create(
@@ -163,7 +241,7 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         let tags_2 = todo.tags.clone();
         let username = username.to_owned();
         match conn.run(move |c| {
-            let res: Result<TodoDB, diesel::result::Error> = diesel::insert_into(_todo)
+            let res: Result<TodoDB, result::Error> = diesel::insert_into(_todo)
                 .values(NewTodoDB::from_domain_todo(todo, &username))
                 .get_result::<TodoDB>(c);
             match res {
@@ -230,17 +308,7 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
                 Err(err) => {
                     println!("err: {:?}", &err);
                     match err {
-                        // diesel::result::Error::InvalidCString(_) => todo!(),
-                        // diesel::result::Error::DatabaseError(_, _) => todo!(),
-                        diesel::result::Error::NotFound => Err(errors::RepoUpdateError::NotFound),
-                        // diesel::result::Error::QueryBuilderError(_) => todo!(),
-                        // diesel::result::Error::DeserializationError(_) => todo!(),
-                        // diesel::result::Error::SerializationError(_) => todo!(),
-                        // diesel::result::Error::RollbackErrorOnCommit { rollback_error, commit_error } => todo!(),
-                        // diesel::result::Error::RollbackTransaction => todo!(),
-                        // diesel::result::Error::AlreadyInTransaction => todo!(),
-                        // diesel::result::Error::NotInTransaction => todo!(),
-                        // diesel::result::Error::BrokenTransactionManager => todo!(),
+                        result::Error::NotFound => Err(errors::RepoUpdateError::NotFound),
                         _ => Err(errors::RepoUpdateError::Unknown("".to_owned())),
                     }
                 },
@@ -257,32 +325,176 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
     async fn add_tag(
         &self, 
         conn: &Db, 
-        username: &String, 
         todo_id: i32, 
         tag: &String
     ) -> Result<TodoDomain, errors::RepoUpdateError> {
-        todo!()
+        let tag = tag.to_owned();
+        match conn.run(move |c| {
+            let todo = if let Ok(todo) = _todo.find(todo_id).first::<TodoDB>(c) {
+                todo
+            } else {
+                return Err(errors::RepoUpdateError::NotFound);
+            };
+            let tag_id = if let Ok(tag) = diesel::select(create_tag(tag, &todo.username))
+                .get_result::<(i32, String)>(c) {
+                tag.0
+            } else {
+                return Err(errors::RepoUpdateError::Unknown("".to_string()))
+            };
+            match diesel::insert_into(_todo_tag)
+                .values(&NewTodoTag { tag_id, todo_id: todo_id })
+                .execute(c) {
+                Ok(_) => match diesel::select(find_tags_sql(todo.id)).get_result::<Option<Vec<String>>>(c) {
+                    Ok(tags) => Ok((todo, tags)),
+                    Err(err) => {
+                        println!("err: {}", err);
+                        Err(errors::RepoUpdateError::Unknown("Not found tags".to_owned()))
+                    },
+                },
+                Err(err) => match err {
+                    result::Error::NotFound => Err(errors::RepoUpdateError::NotFound),
+                    _ => Err(errors::RepoUpdateError::Unknown("".to_owned())),
+                },
+            }
+        }).await {
+            Ok((
+                todo, 
+                tags
+            )) => Ok(todo.to_domain_todo(tags.unwrap_or(Vec::new()))),
+            Err(err) => Err(err)
+        }
     }
 
     async fn remove_tag(
         &self, 
         conn: &Db, 
-        username: &String, 
         todo_id: i32, 
         tag: &String
     ) -> Result<TodoDomain, errors::RepoUpdateError> {
-        todo!()
+        let tag = tag.to_owned();
+        match conn.run(move |c| {
+            let todo = if let Ok(todo) = _todo.find(todo_id).first::<TodoDB>(c) {
+                todo
+            } else {
+                return Err(errors::RepoUpdateError::NotFound);
+            };
+            let tag_id = if let Ok(tag) = diesel::select(create_tag(tag, &todo.username))
+                .get_result::<(i32, String)>(c) {
+                tag.0
+            } else {
+                return Err(errors::RepoUpdateError::Unknown("".to_string()))
+            };
+            match diesel::delete(_todo_tag.find((todo.id, tag_id)))
+                .execute(c) {
+                Ok(_) => match diesel::select(find_tags_sql(todo.id)).get_result::<Option<Vec<String>>>(c) {
+                    Ok(tags) => Ok((todo, tags)),
+                    Err(err) => {
+                        println!("err: {}", err);
+                        Err(errors::RepoUpdateError::Unknown("Not found tags".to_owned()))
+                    },
+                },
+                Err(err) => match err {
+                    result::Error::NotFound => Err(errors::RepoUpdateError::NotFound),
+                    _ => Err(errors::RepoUpdateError::Unknown("".to_owned())),
+                },
+            }
+        }).await {
+            Ok((
+                todo, 
+                tags
+            )) => Ok(todo.to_domain_todo(tags.unwrap_or(Vec::new()))),
+            Err(err) => Err(err)
+        }
     }
 
-    async fn delete(&self, conn: &Db, username: &String, id: i32) -> Result<TodoDomain, errors::RepoDeleteError> {
-        todo!()
+    async fn delete(&self, conn: &Db, id: i32) -> Result<TodoDomain, errors::RepoDeleteError> {
+        match conn.run(move |c| {
+            let res = diesel::delete(_todo.find(id))
+                .get_result::<TodoDB>(c);
+            match res {
+                Ok(
+                    todo
+                ) => match diesel::select(find_tags_sql(todo.id)).get_result::<Option<Vec<String>>>(c) {
+                    Ok(tags) => Ok((todo, tags)),
+                    Err(err) => {
+                        println!("err: {}", err);
+                        Err(errors::RepoDeleteError::Unknown("Not found tags".to_owned()))
+                    },
+                },
+                Err(err) => match err {
+                    result::Error::NotFound => Err(errors::RepoDeleteError::NotFound),
+                    _ => Err(errors::RepoDeleteError::Unknown("".to_owned())),
+                },
+            }
+        }).await {
+            Ok((
+                todo, 
+                tags
+            )) => Ok(todo.to_domain_todo(tags.unwrap_or(Vec::new()))),
+            Err(err) => Err(err)
+        }
     }
 
     async fn delete_all_criteria(
         &self, conn: &Db, 
-        username: &String, 
         find_todo: todo_repository::FindTodo
-    ) -> Result<Vec<TodoDomain>, crate::application::port::driven::errors::RepoDeleteError> {
-        todo!()
+    ) -> Result<Vec<TodoDomain>, errors::RepoDeleteError> {
+        match conn.run(move |c| {
+            let res = diesel::select(find_todo_sql(
+                find_todo.username,
+                find_todo.title,
+                find_todo.description,
+                find_todo.status.and_then(|x| Some(x as i32)),
+                find_todo.tags
+            )).get_results::<(
+                i32,
+                String, 
+                String, 
+                Option<String>, 
+                i32, 
+                DateTime<Utc>, 
+                Option<DateTime<Utc>>, 
+                Option<DateTime<Utc>>
+            )>(c);
+            match res {
+                Ok(todo_tuples) => {
+                    let todo_tag_tuples: Vec<Result<TodoDomain, errors::RepoDeleteError>> = todo_tuples.into_iter().map(
+                        |x| {
+                            if let Ok(todo) = to_domain_todo(c, TodoDB::from_tuple(x)) {
+                                Ok(todo)
+                            } else {
+                                Err(errors::RepoDeleteError::Unknown("".to_string()))
+                            }
+                        }
+                    ).collect();
+                    Ok(todo_tag_tuples)
+                },
+                Err(_) => Err(errors::RepoDeleteError::Unknown("".to_owned()))
+            }
+        }).await {
+            Ok(todos) => {
+               let res: Vec<TodoDomain> = todos.into_iter()
+                .filter(|x| x.is_ok())
+                .map(|x| x.unwrap())
+                .collect();
+                for todo in res.iter() {
+                    self.delete(conn, todo.id.unwrap()).await?;
+                };
+                Ok(res)
+            },
+            Err(err) => Err(err)
+        }
+    }
+}
+
+fn to_domain_todo(conn: &mut PgConnection, todo: TodoDB) -> Result<TodoDomain, errors::RepoSelectError> {
+    match diesel::select(find_tags_sql(todo.id)).get_result::<Option<Vec<String>>>(conn) {
+        Ok(tags) => {
+            Ok(todo.to_domain_todo(tags.unwrap_or(Vec::new())))
+        },
+        Err(err) => {
+            println!("err: {}", err);
+            Err(errors::RepoSelectError::Unknown("Not found tags".to_owned()))
+        }
     }
 }

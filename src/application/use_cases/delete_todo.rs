@@ -24,7 +24,7 @@ pub async fn execute<T>(
         return Err(DeleteError::Unautorized("Invalid token".to_string()));
     };
     if repo.find_one(conn, id).await.is_ok() {
-        match repo.delete(conn, &username, id).await {
+        match repo.delete(conn, id).await {
             Ok(_) => Ok(()),
             Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
         }

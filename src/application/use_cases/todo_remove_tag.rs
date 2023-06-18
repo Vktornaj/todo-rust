@@ -34,7 +34,7 @@ pub async fn execute<T>(
         return Err(UpdateError::Conflict(format!("Tag not found")));
     }
 
-    match repo.remove_tag(conn, &username, todo_id, &tag).await {
+    match repo.remove_tag(conn, todo_id, &tag).await {
         Ok(todo) => Ok(todo),
         Err(error) => Err(UpdateError::Unknown(format!("Unknown error: {:?}", error))),
     }

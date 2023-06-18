@@ -30,7 +30,7 @@ async fn execute<T>(
         status: None,
         tags: Some(vec![tag.to_owned()]),
     };
-    match repo.delete_all_criteria(conn, &username, find_todo).await {
+    match repo.delete_all_criteria(conn, find_todo).await {
         Ok(_) => Ok(()),
         Err(error) => Err(DeleteError::Unknown(format!("Unknown error: {:?}", error))),
     }

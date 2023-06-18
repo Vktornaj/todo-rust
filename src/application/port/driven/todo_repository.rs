@@ -20,11 +20,11 @@ pub struct FindTodo {
     pub tags: Option<Vec<String>>,
 }
 
-pub struct FindTodoByDateRange {
-    pub create_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
-    pub done_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
-    pub deadline: Option<(DateTime<Utc>, DateTime<Utc>)>,
-}
+// pub struct FindTodoByDateRange {
+//     pub create_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
+//     pub done_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
+//     pub deadline: Option<(DateTime<Utc>, DateTime<Utc>)>,
+// }
 
 pub struct UpdateTodo {
     pub id: i32,
@@ -67,13 +67,13 @@ pub trait TodoRepository<T> {
     ) -> Result<Vec<Todo>, RepoFindAllError>;
     
     /// Find and return all records corresponding to the search criteria from the persistence system
-    async fn find_all_date_range(
-        &self, conn: &T, 
-        username: &String, 
-        from: i32, 
-        to: i32,
-        find_todo_by_date_range: FindTodoByDateRange
-    ) -> Result<Vec<Todo>, RepoFindAllError>;
+    // async fn find_all_date_range(
+    //     &self, conn: &T, 
+    //     username: &String, 
+    //     from: i32, 
+    //     to: i32,
+    //     find_todo_by_date_range: FindTodoByDateRange
+    // ) -> Result<Vec<Todo>, RepoFindAllError>;
 
     /// Insert the received entity in the persistence system
     async fn create(&self, conn: &T, username: &String, todo: Todo) -> Result<Todo, RepoCreateError>;
@@ -89,7 +89,6 @@ pub trait TodoRepository<T> {
     async fn add_tag(
         &self, 
         conn: &T, 
-        username: &String, 
         todo_id: i32, 
         tag: &String
     ) -> Result<Todo, RepoUpdateError>;
@@ -98,18 +97,16 @@ pub trait TodoRepository<T> {
     async fn remove_tag(
         &self, 
         conn: &T, 
-        username: &String, 
         todo_id: i32, 
         tag: &String
     ) -> Result<Todo, RepoUpdateError>;
 
     /// Delete one single record from the persistence system
-    async fn delete(&self, conn: &T, username: &String, id: i32) -> Result<Todo, RepoDeleteError>;
+    async fn delete(&self, conn: &T, id: i32) -> Result<Todo, RepoDeleteError>;
     
     /// Delete one single record from the persistence system
     async fn delete_all_criteria(
         &self, conn: &T, 
-        username: &String, 
         find_todo: FindTodo
     ) -> Result<Vec<Todo>, RepoDeleteError>;
 }

@@ -22,7 +22,7 @@ pub async fn execute<T>(
     } else {
         return Err(FindAllError::Unautorized("Invalid token".to_string()));
     };
-    match repo.find_all(conn, &username, from, to).await.ok() {
+    match repo.find_all(conn, &username, from, from + to).await.ok() {
         Some(todo) => Ok(todo),
         None => Err(FindAllError::Unknown("not found".to_string())),
     }
