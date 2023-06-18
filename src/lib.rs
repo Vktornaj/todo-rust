@@ -3,13 +3,13 @@ use cors::CORS;
 use rocket::{launch, routes};
 use dotenv::dotenv;
 
-mod database;
-mod cors;
-mod auth;
 mod config;
-pub mod routes;
-pub mod models;
-mod schema;
+mod domain;
+mod application;
+mod adapter;
+mod cors;
+
+use adapter::driving::web::routes;
 
 
 #[catch(404)]
@@ -44,7 +44,6 @@ pub fn rocket() -> _ {
             routes![
                 routes::user::username_available,
                 routes::user::create_user,
-                routes::user::list_users,
                 routes::user::login,
                 routes::user::get_user_info,
                 routes::todo::post_todo,
@@ -56,6 +55,7 @@ pub fn rocket() -> _ {
                 all_options,
             ]
         )
+        .attach(adapter::driven::persistence::pgsql::db::Db::fairing())
         .attach(config::AppState::manage())
         .register("/", catchers![not_found])
 }
