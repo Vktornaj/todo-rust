@@ -18,6 +18,7 @@ use self::schema::_todo::dsl::{
 };
 use self::schema::_todo_tag::dsl::{
     _todo_tag,
+    todo_id as _todo_tag_todo_id,
 };
 
 
@@ -409,6 +410,10 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
 
     async fn delete(&self, conn: &Db, id: i32) -> Result<TodoDomain, errors::RepoDeleteError> {
         match conn.run(move |c| {
+            if diesel::delete(_todo_tag.filter(_todo_tag_todo_id.eq(id)))
+                .execute(c).is_err() {
+                return Err(errors::RepoDeleteError::Unknown("".to_owned()))
+            }
             let res = diesel::delete(_todo.find(id))
                 .get_result::<TodoDB>(c);
             match res {

@@ -40,7 +40,7 @@ CREATE TABLE _todo_tag (
 );
 
 -- Functions
-CREATE FUNCTION find_user_by_username(_username text)
+CREATE FUNCTION find_user_by_username(_username VARCHAR)
 RETURNS TABLE (
     id integer,
     first_name varchar,
@@ -122,6 +122,60 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION update_todo(
+    p_id INT,
+    p_title VARCHAR,
+    p_description VARCHAR,
+    p_status INT,
+    p_done_date TIMESTAMPTZ,
+    p_deadline TIMESTAMPTZ
+)
+RETURNS TABLE (
+    id INT,
+    username VARCHAR,
+    title VARCHAR,
+    description VARCHAR,
+    status INT,
+    create_date TIMESTAMPTZ,
+    done_date TIMESTAMPTZ,
+    deadline TIMESTAMPTZ
+)
+AS $$
+BEGIN
+    UPDATE _todo AS t
+    SET
+        username = t.username,
+        title = COALESCE(p_title, t.title),
+        description = COALESCE(p_description, t.description),
+        status = COALESCE(p_status, t.status),
+        done_date = COALESCE(p_done_date, t.done_date),
+        deadline = COALESCE(p_deadline, t.deadline)
+    WHERE t.id = p_id
+    RETURNING
+        t.id,
+        t.username,
+        t.title,
+        t.description,
+        t.status,
+        t.create_date,
+        t.done_date,
+        t.deadline
+    INTO
+        id,
+        username,
+        title,
+        description,
+        status,
+        create_date,
+        done_date,
+        deadline;
+
+    RETURN NEXT;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
 
 -- Add a primary key column to the tag_entry table
-ALTER TABLE tag_entry ADD COLUMN tag_entry_id SERIAL PRIMARY KEY;
+-- ALTER IF EXISTS TABLE tag_entry ADD COLUMN tag_entry_id SERIAL PRIMARY KEY;
