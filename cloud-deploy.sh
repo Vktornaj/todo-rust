@@ -8,7 +8,7 @@ remote_user="admin"
 local_path=$(pwd)/
 remote_path="/home/${remote_user}/todo_rust/"
 ssh_key="/home/vktornaj/aws/key_001.pem"
-tag='0.0.9'
+tag='0.0.10'
 
 
 # Upadte source code
