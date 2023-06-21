@@ -27,7 +27,7 @@ pub async fn post_todo(
     state: &State<AppState>, 
     token: Token,
     todo: Json<TodoJson>
-) -> (Status, &'static str) {
+) -> Result<(Status, Json<TodoJson>), Status> {
     match use_cases::create_todo::execute(
         &connection, 
         &TodoRepository {}, 
@@ -35,12 +35,12 @@ pub async fn post_todo(
         &token.value,
         todo.0.to_domain_todo()
     ).await {
-        Ok(_) => (Status::Ok, "done"),
+        Ok(todo) => Ok((Status::Ok, Json(TodoJson::from_domain_todo(todo)))),
         Err(err) => match err {
-            CreateError::Conflict(_) => (Status::Conflict, "the title is in conflict"),
-            CreateError::InvalidData(_) => (Status::BadRequest, ""),
-            CreateError::Unknown(_) => (Status::InternalServerError, ""),
-            CreateError::Unautorized(_) => (Status::Unauthorized, ""),
+            CreateError::Conflict(_) => Err(Status::Conflict),
+            CreateError::InvalidData(_) => Err(Status::BadRequest),
+            CreateError::Unknown(_) => Err(Status::InternalServerError),
+            CreateError::Unautorized(_) => Err(Status::Unauthorized),
         },
     }
 }
