@@ -74,7 +74,7 @@ pub async fn delete_todo(
     state: &State<AppState>, 
     token: Token,
     id: i32
-) -> Status {
+) -> Result<Json<TodoJson>, Status> {
     match use_cases::delete_todo::execute(
         &connection,
         &TodoRepository {}, 
@@ -82,12 +82,12 @@ pub async fn delete_todo(
         &token.value, 
         id.into()
     ).await {
-        Ok(_) => Status::Ok,
+        Ok(todo) => Ok(Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            DeleteError::InvalidData(_) => Status::BadRequest,
-            DeleteError::Unknown(_) => Status::InternalServerError,
-            DeleteError::Unautorized(_) => Status::Unauthorized,
-            DeleteError::Conflict(_) => Status::Conflict,
+            DeleteError::InvalidData(_) => Err(Status::BadRequest),
+            DeleteError::Unknown(_) => Err(Status::InternalServerError),
+            DeleteError::Unautorized(_) => Err(Status::Unauthorized),
+            DeleteError::Conflict(_) => Err(Status::Conflict),
         },
     }
 }
