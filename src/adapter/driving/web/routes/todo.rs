@@ -52,6 +52,7 @@ pub async fn update_todo(
     token: Token,
     todo: Json<TodoJson>
 ) -> Result<Json<TodoJson>, Status> {
+    println!("{:?}", todo);
     match use_cases::update_todo::execute(
         &connection, 
         &TodoRepository {}, 

@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use crate::{domain::todo::{Todo as TodoDomain, Status}, config::DATE_FORMAT, application::port::driven::todo_repository::UpdateTodo};
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TodoJson {
     pub id: Option<i32>,
@@ -12,8 +12,18 @@ pub struct TodoJson {
     pub description: Option<String>,
     pub status: Option<Status>,
     pub create_date: Option<String>,
-    pub done_date: Option<String>,
-    pub deadline: Option<String>,
+    #[serde(
+        default,                                    // <- important for deserialization
+        skip_serializing_if = "Option::is_none",    // <- important for serialization
+        with = "::serde_with::rust::double_option",
+    )]
+    pub done_date: Option<Option<String>>,
+    #[serde(
+        default,                                   
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option",
+    )]
+    pub deadline: Option<Option<String>>,
     pub tags: Option<Vec<String>>,
 }
 
@@ -30,6 +40,7 @@ impl TodoJson {
             tags: None 
         }
     }
+    // TODO: Fix this
     pub fn from_domain_todo(todo: TodoDomain) -> Self {
         TodoJson { 
             id: todo.id, 
@@ -43,6 +54,7 @@ impl TodoJson {
         }
     }
     
+    // TODO: Fix this
     pub fn to_domain_todo(self) -> TodoDomain {
         TodoDomain {
             id: None,
@@ -56,6 +68,7 @@ impl TodoJson {
         }
     }
 
+    // TODO: Fix this
     pub fn to_update_todo(self) -> UpdateTodo {
         UpdateTodo {
             id: self.id.unwrap(),
