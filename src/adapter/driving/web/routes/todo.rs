@@ -117,7 +117,6 @@ pub async fn get_todos(
     }
 }
 
-// TODO: fix allowing repeat values
 #[put("/todo/<id>/tag/<tag>")]
 pub async fn put_add_tag(
     connection: Db,

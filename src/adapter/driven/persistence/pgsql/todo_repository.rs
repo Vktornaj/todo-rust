@@ -22,6 +22,7 @@ use self::schema::_todo_tag::dsl::{
 };
 
 
+// TODO: add "sql" suffix to all sql functions here and onto migrations
 // Postgres functions
 sql_function! { 
     fn find_todo_sql(
@@ -284,8 +285,8 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
                 todo.title,
                 todo.description,
                 todo.status.and_then(|x| Some(x as i32)),
-                todo.deadline,
-                todo.done_date
+                todo.done_date,
+                todo.deadline
             )).get_result::<(
                 i32,
                 String, 
