@@ -16,17 +16,17 @@ use crate::adapter::driven::persistence::pgsql::user_repository::UserRepository;
 
 
 #[post("/register", format = "json", data = "<user>")]
-pub async fn create_user(connection: Db, user: Json<NewUserJson>) -> (Status, String)  {
+pub async fn create_user(connection: Db, user: Json<NewUserJson>) -> Result<Json<UserJson>, Status>  {
     match use_cases::create_user::execute(
         &connection, 
         &UserRepository {}, 
         user.to_user()
     ).await {
-        Ok(_) => (Status::Ok, "".to_string()),
+        Ok(user) => Ok(Json(UserJson::from_user(user))),
         Err(error) => match error {
-            use_cases::create_user::CreateError::InvalidData(s) => (Status::BadRequest, s),
-            use_cases::create_user::CreateError::Unknown(s) => (Status::InternalServerError, s),
-            use_cases::create_user::CreateError::Conflict(s) => (Status::Conflict, s),
+            use_cases::create_user::CreateError::InvalidData(_) => Err(Status::BadRequest),
+            use_cases::create_user::CreateError::Unknown(_) => Err(Status::InternalServerError),
+            use_cases::create_user::CreateError::Conflict(_) => Err(Status::Conflict),
         }
     }
 }
@@ -49,17 +49,17 @@ pub async fn get_user_info(
     connection: Db, 
     state: &State<AppState>, 
     token: Token
-) -> (Status, Json<Result<UserJson, String>>) {
+) -> Result<Json<UserJson>, Status> {
     match use_cases::get_user_info::execute(
         &connection,
         &UserRepository {},
         &state.secret,
         &token.value
     ).await {
-        Ok(user) => (Status::Ok, Json(Ok(UserJson::from_user(user)))),
+        Ok(user) => Ok(Json(UserJson::from_user(user))),
         Err(err) => match err {
-            use_cases::get_user_info::FindError::Unknown(_) => (Status::NotFound, Json(Err("".to_string()))),
-            use_cases::get_user_info::FindError::Unautorized(_) => (Status::Unauthorized, Json(Err("".to_string()))),
+            use_cases::get_user_info::FindError::Unknown(_) => Err(Status::NotFound),
+            use_cases::get_user_info::FindError::Unautorized(_) => Err(Status::Unauthorized),
         },
     }   
 }

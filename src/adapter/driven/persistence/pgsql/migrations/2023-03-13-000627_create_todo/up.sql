@@ -127,8 +127,8 @@ CREATE OR REPLACE FUNCTION update_todo(
     p_title VARCHAR,
     p_description VARCHAR,
     p_status INT,
-    p_done_date TIMESTAMPTZ,
-    p_deadline TIMESTAMPTZ
+    p_done_date TIMESTAMPTZ DEFAULT '9999-12-31 23:59:59.999999+00',
+    p_deadline TIMESTAMPTZ DEFAULT '9999-12-31 23:59:59.999999+00'
 )
 RETURNS TABLE (
     id INT,
@@ -148,8 +148,14 @@ BEGIN
         title = COALESCE(p_title, t.title),
         description = COALESCE(p_description, t.description),
         status = COALESCE(p_status, t.status),
-        done_date = COALESCE(p_done_date, t.done_date),
-        deadline = COALESCE(p_deadline, t.deadline)
+        done_date = CASE
+            WHEN p_done_date = '9999-12-31 23:59:59.999999+00' THEN t.done_date
+            ELSE p_done_date
+        END,
+        deadline = CASE
+            WHEN p_deadline = '9999-12-31 23:59:59.999999+00' THEN t.deadline
+            ELSE p_deadline
+        END
     WHERE t.id = p_id
     RETURNING
         t.id,

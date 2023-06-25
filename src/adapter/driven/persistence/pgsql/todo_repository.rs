@@ -1,5 +1,5 @@
 extern crate diesel;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, FixedOffset, TimeZone};
 use diesel::result;
 use diesel::pg::{PgConnection};
 use diesel::{prelude::*};
@@ -22,6 +22,7 @@ use self::schema::_todo_tag::dsl::{
 };
 
 
+// TODO: add "sql" suffix to all sql functions here and onto migrations
 // Postgres functions
 sql_function! { 
     fn find_todo_sql(
@@ -279,13 +280,20 @@ impl todo_repository::TodoRepository<Db> for TodoRepository {
         todo: todo_repository::UpdateTodo
     ) -> Result<TodoDomain, errors::RepoUpdateError> {
         match conn.run(move |c| {
+            // Placeholder to no change: '9999-12-31 23:59:59.999999+00'
+            let date_str = "9999-12-31 23:59:59.999999";
+            let format = "%Y-%m-%d %H:%M:%S%.6f";
+            let placeholder: DateTime<Utc> = Utc.datetime_from_str(date_str, format).unwrap();
+            let done_date: Option<DateTime<Utc>> = todo.done_date.unwrap_or(Some(placeholder));
+            let deadline: Option<DateTime<Utc>> = todo.deadline.unwrap_or(Some(placeholder));
+
             let res = diesel::select(update_todo(
                 todo.id,
                 todo.title,
                 todo.description,
                 todo.status.and_then(|x| Some(x as i32)),
-                todo.deadline,
-                todo.done_date
+                done_date,
+                deadline
             )).get_result::<(
                 i32,
                 String, 

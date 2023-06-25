@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[derive(Deserialize, Serialize)]
 pub enum Status {
     PENDING,

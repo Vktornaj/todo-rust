@@ -27,7 +27,7 @@ pub async fn post_todo(
     state: &State<AppState>, 
     token: Token,
     todo: Json<TodoJson>
-) -> (Status, &'static str) {
+) -> Result<Json<TodoJson>, Status> {
     match use_cases::create_todo::execute(
         &connection, 
         &TodoRepository {}, 
@@ -35,12 +35,12 @@ pub async fn post_todo(
         &token.value,
         todo.0.to_domain_todo()
     ).await {
-        Ok(_) => (Status::Ok, "done"),
+        Ok(todo) => Ok(Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            CreateError::Conflict(_) => (Status::Conflict, "the title is in conflict"),
-            CreateError::InvalidData(_) => (Status::BadRequest, ""),
-            CreateError::Unknown(_) => (Status::InternalServerError, ""),
-            CreateError::Unautorized(_) => (Status::Unauthorized, ""),
+            CreateError::Conflict(_) => Err(Status::Conflict),
+            CreateError::InvalidData(_) => Err(Status::BadRequest),
+            CreateError::Unknown(_) => Err(Status::InternalServerError),
+            CreateError::Unautorized(_) => Err(Status::Unauthorized),
         },
     }
 }
@@ -51,7 +51,7 @@ pub async fn update_todo(
     state: &State<AppState>, 
     token: Token,
     todo: Json<TodoJson>
-) -> (Status, Json<TodoJson>) {
+) -> Result<Json<TodoJson>, Status> {
     match use_cases::update_todo::execute(
         &connection, 
         &TodoRepository {}, 
@@ -59,11 +59,11 @@ pub async fn update_todo(
         &token.value, 
         todo.0.to_update_todo()
     ).await {
-        Ok(todo) => (Status::Ok, Json(TodoJson::from_domain_todo(todo))),
+        Ok(todo) => Ok(Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            UpdateError::InvalidData(_) => (Status::BadRequest, Json(TodoJson::new())),
-            UpdateError::Unknown(_) => (Status::InternalServerError, Json(TodoJson::new())),
-            UpdateError::Unautorized(_) => (Status::Unauthorized, Json(TodoJson::new())),
+            UpdateError::InvalidData(_) => Err(Status::BadRequest),
+            UpdateError::Unknown(_) => Err(Status::InternalServerError),
+            UpdateError::Unautorized(_) => Err(Status::Unauthorized),
         },
     }
 }
@@ -74,7 +74,7 @@ pub async fn delete_todo(
     state: &State<AppState>, 
     token: Token,
     id: i32
-) -> Status {
+) -> Result<Json<TodoJson>, Status> {
     match use_cases::delete_todo::execute(
         &connection,
         &TodoRepository {}, 
@@ -82,12 +82,12 @@ pub async fn delete_todo(
         &token.value, 
         id.into()
     ).await {
-        Ok(_) => Status::Ok,
+        Ok(todo) => Ok(Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            DeleteError::InvalidData(_) => Status::BadRequest,
-            DeleteError::Unknown(_) => Status::InternalServerError,
-            DeleteError::Unautorized(_) => Status::Unauthorized,
-            DeleteError::Conflict(_) => Status::Conflict,
+            DeleteError::InvalidData(_) => Err(Status::BadRequest),
+            DeleteError::Unknown(_) => Err(Status::InternalServerError),
+            DeleteError::Unautorized(_) => Err(Status::Unauthorized),
+            DeleteError::Conflict(_) => Err(Status::Conflict),
         },
     }
 }
@@ -117,7 +117,6 @@ pub async fn get_todos(
     }
 }
 
-// TODO: fix allowing repeat values
 #[put("/todo/<id>/tag/<tag>")]
 pub async fn put_add_tag(
     connection: Db,
@@ -125,7 +124,7 @@ pub async fn put_add_tag(
     token: Token,
     id: i32, 
     tag: String
-) -> (Status, String) {
+) -> Result<Json<TodoJson>, Status> {
     match use_cases::todo_add_tag::execute(
         &connection,
         &TodoRepository {}, 
@@ -134,12 +133,12 @@ pub async fn put_add_tag(
         id,
         &tag
     ).await {
-        Ok(_) => (Status::Ok, "".to_owned()),
+        Ok(todo) => Ok(Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            todo_add_tag::UpdateError::Unknown(_) => (Status::InternalServerError, "error querying the database".to_owned()),
-            todo_add_tag::UpdateError::Unautorized(_) => (Status::Unauthorized, "".to_owned()),
-            todo_add_tag::UpdateError::InvalidData(_) => (Status::NoContent, "you don't have a todo with this id".to_owned()),
-            todo_add_tag::UpdateError::Conflict(_) => (Status::NotAcceptable, "database insert failed".to_owned()),
+            todo_add_tag::UpdateError::Unknown(_) => Err(Status::InternalServerError),
+            todo_add_tag::UpdateError::Unautorized(_) => Err(Status::Unauthorized),
+            todo_add_tag::UpdateError::InvalidData(_) => Err(Status::NoContent),
+            todo_add_tag::UpdateError::Conflict(_) => Err(Status::NotAcceptable),
         },
     }
 }
@@ -151,7 +150,7 @@ pub async fn put_remove_tag(
     token: Token,
     id: i32, 
     tag: String
-) -> Status {
+) -> Result<Json<TodoJson>, Status> {
     match use_cases::todo_remove_tag::execute(
         &connection,
         &TodoRepository {}, 
@@ -160,12 +159,12 @@ pub async fn put_remove_tag(
         id,
         &tag
     ).await {
-        Ok(_) => Status::Ok,
+        Ok(todo) => Ok(Json(TodoJson::from_domain_todo(todo))),
         Err(err) => match err {
-            todo_remove_tag::UpdateError::Unknown(_) => Status::InternalServerError,
-            todo_remove_tag::UpdateError::Unautorized(_) => Status::Unauthorized,
-            todo_remove_tag::UpdateError::InvalidData(_) => Status::NoContent,
-            todo_remove_tag::UpdateError::Conflict(_) => Status::NotAcceptable,
+            todo_remove_tag::UpdateError::Unknown(_) => Err(Status::InternalServerError),
+            todo_remove_tag::UpdateError::Unautorized(_) => Err(Status::Unauthorized),
+            todo_remove_tag::UpdateError::InvalidData(_) => Err(Status::NoContent),
+            todo_remove_tag::UpdateError::Conflict(_) => Err(Status::NotAcceptable),
         },
     }
 }
