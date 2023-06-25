@@ -25,9 +25,9 @@ pub async fn execute<T>(
     };
     if update_todo.status.is_some() {
         if &update_todo.status == &Some(Status::DONE)  {
-            update_todo.done_date = Some(Utc::now());
+            update_todo.done_date = Some(Some(Utc::now()));
         } else {
-            update_todo.done_date = None;
+            update_todo.done_date = Some(None);
         }
     }
     match repo.update(conn,  update_todo).await {

@@ -1,7 +1,11 @@
 use chrono::{Utc, TimeZone};
 use serde::{Serialize, Deserialize};
 
-use crate::{domain::todo::{Todo as TodoDomain, Status}, config::DATE_FORMAT, application::port::driven::todo_repository::UpdateTodo};
+use crate::{
+    domain::todo::{Todo as TodoDomain, Status},
+    config::DATE_FORMAT, 
+    application::port::driven::todo_repository::UpdateTodo
+};
 
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -47,13 +51,16 @@ impl TodoJson {
             title: Some(todo.title), 
             description: todo.description, 
             status: Some(todo.status), 
-            create_date: todo.create_date.and_then(|x| Some(x.format(DATE_FORMAT).to_string())), 
-            done_date: todo.done_date.and_then(|x| Some(x.format(DATE_FORMAT).to_string())), 
-            deadline: todo.deadline.and_then(|x| Some(x.format(DATE_FORMAT).to_string())), 
+            create_date: todo.create_date
+                .and_then(|x| Some(x.format(DATE_FORMAT).to_string())), 
+            done_date: Some(todo.done_date
+                .and_then(|x| Some(x.format(DATE_FORMAT).to_string()))), 
+            deadline: Some(todo.deadline
+                .and_then(|x| Some(x.format(DATE_FORMAT).to_string()))), 
             tags: Some(todo.tags) 
         }
     }
-    
+
     // TODO: Fix this
     pub fn to_domain_todo(self) -> TodoDomain {
         TodoDomain {
@@ -62,8 +69,12 @@ impl TodoJson {
             description: self.description,
             status: self.status.unwrap_or(Status::PENDING),
             create_date: None,
-            done_date: self.done_date.and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok()),
-            deadline: self.deadline.and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok()),
+            done_date: self.done_date
+                .and_then(|x| x
+                    .and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok())),
+            deadline: self.deadline
+                .and_then(|x| x
+                    .and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok())),
             tags: self.tags.unwrap_or(Vec::new()),
         }
     }
@@ -75,8 +86,12 @@ impl TodoJson {
             title: self.title, 
             description: self.description, 
             status: self.status, 
-            done_date: self.done_date.and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok()), 
-            deadline: self.deadline.and_then(|x| Utc.datetime_from_str(&x, DATE_FORMAT).ok())
+            done_date: self.done_date
+                .and_then(|x| x
+                    .and_then(|x| Some(Utc.datetime_from_str(&x, DATE_FORMAT).ok()))), 
+            deadline: self.deadline
+                .and_then(|x| x
+                    .and_then(|x| Some(Utc.datetime_from_str(&x, DATE_FORMAT).ok()))), 
         }
     } 
 }

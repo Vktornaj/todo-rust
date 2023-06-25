@@ -31,8 +31,8 @@ pub struct UpdateTodo {
     pub title: Option<String>,
     pub description: Option<String>,
     pub status: Option<Status>,
-    pub done_date: Option<DateTime<Utc>>,
-    pub deadline: Option<DateTime<Utc>>,
+    pub done_date: Option<Option<DateTime<Utc>>>,
+    pub deadline: Option<Option<DateTime<Utc>>>,
 }
 
 #[async_trait]
