@@ -1,6 +1,6 @@
 ## Rust Todo API
 
-This is a simple Todo API written in Rust using the rocket framework for web and diesel framework for data. The API allows you to manage your todo tasks by performing basic CRUD (Create, Read, Update, Delete) operations on them.
+This is a simple Todo API written in Rust implementing hexagonal architecture, using the rocket framework for web and diesel framework for data. The API allows you to manage your todo tasks by performing basic CRUD (Create, Read, Update, Delete) operations on them.
 
 ### Getting Started
 
@@ -84,7 +84,7 @@ The Todo API exposes the following endpoints:
      
 5. **Create Todo**
 
-   - **URL**: `/todo`
+   - **URL**: `/api/todo`
    - **Method**: POST
    - **Description**: Create a new todo task.
    - **Request Header**: `Authorization: Bearer <token>`
@@ -100,7 +100,7 @@ The Todo API exposes the following endpoints:
 
 6. **Update Todo**
 
-   - **URL**: `/todo`
+   - **URL**: `/api/todo`
    - **Method**: PUT
    - **Description**: Update an existing todo task.
    - **Request Header**: `Authorization: Bearer <token>`
@@ -117,7 +117,7 @@ The Todo API exposes the following endpoints:
 
 7. **Delete Todo**
 
-   - **URL**: `/todo/<id>`
+   - **URL**: `/api/todo/<id>`
    - **Method**: DELETE
    - **Description**: Delete a todo task by its ID.
    - **Request Header**: `Authorization: Bearer <token>`
@@ -125,7 +125,7 @@ The Todo API exposes the following endpoints:
 
 8. **Get Todos**
 
-   - **URL**: `/todos/<from>/<to>`
+   - **URL**: `/api/todos/<from>/<to>`
    - **Method**: GET
    - **Description**: Get a list of todo tasks within a range of IDs.
    - **Request Header**: `Authorization: Bearer <token>`
@@ -133,7 +133,7 @@ The Todo API exposes the following endpoints:
 
 9. **Add Tag to Todo**
 
-   - **URL**: `/todo/<id>/tag/<tag>`
+   - **URL**: `/api/todo/<id>/tag/<tag>`
    - **Method**: PUT
    - **Description**: Add a tag to a todo task.
    - **Request Header**: `Authorization: Bearer <token>`
@@ -141,7 +141,7 @@ The Todo API exposes the following endpoints:
 
 10. **Remove Tag from Todo**
 
-    - **URL**: `/todo/<id>/tag/<tag>`
+    - **URL**: `/api/todo/<id>/tag/<tag>`
     - **Method**: DELETE
     - **Description**: Remove a tag from a todo task.
     - **Request Header**: `Authorization: Bearer <token>`
