@@ -88,7 +88,7 @@ The API handles errors gracefully and returns appropriate HTTP status codes alon
 
 ### Data Persistence
 
-The API uses a database connection (`Db`) to interact with the data store for user management. The actual data persistence implementation is not included in this API and should be handled by a concrete repository implementation, such as `UserRepository`.
+The API uses a database connection (`Db`) to interact with the data store for user management.
 
 ### Authentication and Authorization
 
