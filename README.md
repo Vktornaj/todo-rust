@@ -22,7 +22,7 @@ To run the Todo API, follow the steps below:
    cargo run
    ```
 
-   The API will be accessible at `http://localhost:8000`.
+   The API will be accessible at `http://127.0.0.1:8000`.
 
 ### API Endpoints
 
