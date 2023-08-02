@@ -30,7 +30,7 @@ The Todo API exposes the following endpoints:
 
 1. **Register User**
 
-   - **URL**: `/register`
+   - **URL**: `/api/register`
    - **Method**: POST
    - **Description**: Create a new user.
    - **Request Body**:
@@ -44,7 +44,7 @@ The Todo API exposes the following endpoints:
 
 2. **Check Username Availability**
 
-   - **URL**: `/username-availability/<username>`
+   - **URL**: `/api/username-availability/<username>`
    - **Method**: GET
    - **Description**: Check if a username is available for registration.
    - **Response**: Returns a JSON object with the availability status.
@@ -56,7 +56,7 @@ The Todo API exposes the following endpoints:
 
 3. **Get User Info**
 
-   - **URL**: `/user/info`
+   - **URL**: `/api/user/info`
    - **Method**: GET
    - **Description**: Get user information by providing a valid authentication token.
    - **Request Header**: `Authorization: Bearer <token>`
@@ -64,7 +64,7 @@ The Todo API exposes the following endpoints:
 
 4. **Login**
 
-   - **URL**: `/login`
+   - **URL**: `/api/login`
    - **Method**: POST
    - **Description**: Authenticate the user and obtain an access token.
    - **Request Body**:
