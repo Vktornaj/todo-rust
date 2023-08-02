@@ -81,6 +81,71 @@ The Todo API exposes the following endpoints:
        "token_type": "Bearer"
      }
      ```
+     
+5. **Create Todo**
+
+   - **URL**: `/todo`
+   - **Method**: POST
+   - **Description**: Create a new todo task.
+   - **Request Header**: `Authorization: Bearer <token>`
+   - **Request Body**:
+     ```json
+     {
+       "title": "Sample Todo",
+       "description": "This is a sample todo task.",
+       "completed": false
+     }
+     ```
+   - **Response**: Returns the newly created todo in JSON format.
+
+6. **Update Todo**
+
+   - **URL**: `/todo`
+   - **Method**: PUT
+   - **Description**: Update an existing todo task.
+   - **Request Header**: `Authorization: Bearer <token>`
+   - **Request Body**:
+     ```json
+     {
+       "id": 1,
+       "title": "Updated Todo Title",
+       "description": "Updated todo description.",
+       "completed": false
+     }
+     ```
+   - **Response**: Returns the updated todo in JSON format.
+
+7. **Delete Todo**
+
+   - **URL**: `/todo/<id>`
+   - **Method**: DELETE
+   - **Description**: Delete a todo task by its ID.
+   - **Request Header**: `Authorization: Bearer <token>`
+   - **Response**: Returns the deleted todo in JSON format.
+
+8. **Get Todos**
+
+   - **URL**: `/todos/<from>/<to>`
+   - **Method**: GET
+   - **Description**: Get a list of todo tasks within a range of IDs.
+   - **Request Header**: `Authorization: Bearer <token>`
+   - **Response**: Returns a list of todos in JSON format.
+
+9. **Add Tag to Todo**
+
+   - **URL**: `/todo/<id>/tag/<tag>`
+   - **Method**: PUT
+   - **Description**: Add a tag to a todo task.
+   - **Request Header**: `Authorization: Bearer <token>`
+   - **Response**: Returns the updated todo with the added tag in JSON format.
+
+10. **Remove Tag from Todo**
+
+    - **URL**: `/todo/<id>/tag/<tag>`
+    - **Method**: DELETE
+    - **Description**: Remove a tag from a todo task.
+    - **Request Header**: `Authorization: Bearer <token>`
+    - **Response**: Returns the updated todo with the removed tag in JSON format.
 
 ### Error Handling
 
